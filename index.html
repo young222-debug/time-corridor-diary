@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-lz0dyDymyKMMw8enkJDKLMo5VfKFl6j+4f+cTci4OmE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bjY7p1oOa30duobxXUP6rNTtNI1VgEIqGB2KlCpUWuA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <script src="./config.js?v=cloud-20260619"></script>
   <style>
@@ -2731,8 +2731,8 @@
       els.fullBackupEstimate.textContent = formatBytes(estimatedFullBytes);
       const lastBackup = localStorage.getItem(backupStorageKey());
       els.backupStatus.textContent = lastBackup
-        ? `上次下载备份：${formatLong(lastBackup)}。云端会自动保存历史版本；回收站不会自动清空。`
-        : "尚未在这台设备下载过备份。云端会自动保存历史版本；回收站不会自动清空。";
+        ? `上次生成备份：${formatLong(lastBackup)}。云端会自动保存历史版本；回收站不会自动清空。`
+        : "尚未在这台设备生成过备份。云端会自动保存历史版本；回收站不会自动清空。";
     }
 
     async function exportDiary(includeMedia = true) {
@@ -2765,7 +2765,7 @@
       els.textBackupBtn.disabled = false;
       els.fullBackupBtn.disabled = false;
       renderDataOverview();
-      setSaveState("备份已下载");
+      setSaveState("备份已生成");
     }
 
     async function importDiary(file) {
