@@ -1,0 +1,2828 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Iwyo+I6zmTCJ3hnR/7bojVad2fhK+juTZ3upbop9Wb4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <title>时间长廊</title>
+  <script src="./config.js?v=cloud-20260619"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f6f1e8;
+      --paper-2: #eee5d6;
+      --ink: #1c1b18;
+      --muted: #6e675d;
+      --line: rgba(39, 36, 30, 0.14);
+      --line-strong: rgba(39, 36, 30, 0.24);
+      --surface: rgba(255, 252, 245, 0.78);
+      --surface-solid: #fffaf0;
+      --sage: #687866;
+      --blue: #314a5b;
+      --wine: #844e57;
+      --gold: #b08b4f;
+      --shadow: 0 24px 70px rgba(34, 29, 22, 0.14);
+      --radius: 8px;
+      --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif CJK SC", serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-ui);
+      color: var(--ink);
+      background:
+        linear-gradient(115deg, rgba(104, 120, 102, 0.14), transparent 38%),
+        linear-gradient(250deg, rgba(132, 78, 87, 0.12), transparent 42%),
+        repeating-linear-gradient(90deg, rgba(49, 74, 91, 0.035) 0, rgba(49, 74, 91, 0.035) 1px, transparent 1px, transparent 72px),
+        var(--paper);
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(250px, 310px) minmax(330px, 1fr) minmax(360px, 470px);
+      height: 100vh;
+      min-height: 720px;
+    }
+
+    .rail,
+    .editor {
+      background: rgba(255, 250, 240, 0.66);
+      backdrop-filter: blur(22px);
+    }
+
+    .rail {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--line);
+      padding: 28px 22px 22px;
+      overflow: hidden;
+    }
+
+    .brand {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 34px;
+      font-weight: 500;
+      letter-spacing: 0;
+      line-height: 1.05;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .icon-button,
+    .ghost-button,
+    .primary-button,
+    .text-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      border-radius: var(--radius);
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease;
+    }
+
+    .icon-button {
+      width: 40px;
+      min-width: 40px;
+      background: #1f2b29;
+      color: #fff8e9;
+      box-shadow: 0 12px 26px rgba(31, 43, 41, 0.2);
+    }
+
+    .icon-button:hover,
+    .primary-button:hover,
+    .ghost-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .search-wrap {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      width: 17px;
+      height: 17px;
+      color: var(--muted);
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .search-wrap input,
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 246, 0.78);
+      color: var(--ink);
+      outline: 0;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .search-wrap input {
+      height: 44px;
+      padding: 0 14px 0 40px;
+    }
+
+    .search-wrap input:focus,
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: rgba(104, 120, 102, 0.55);
+      box-shadow: 0 0 0 4px rgba(104, 120, 102, 0.12);
+      background: rgba(255, 252, 246, 0.95);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .chip {
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 252, 245, 0.56);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .chip.active {
+      border-color: transparent;
+      background: #22312d;
+      color: #fff8e9;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: rgba(255, 250, 240, 0.48);
+    }
+
+    .stat strong {
+      display: block;
+      font-family: var(--font-serif);
+      font-size: 24px;
+      font-weight: 500;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .entry-list {
+      flex: 1;
+      overflow: auto;
+      margin: 0 -10px;
+      padding: 0 10px 10px;
+      scrollbar-width: thin;
+    }
+
+    .month-title {
+      margin: 18px 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .entry-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      padding: 12px 10px;
+      border-radius: var(--radius);
+      background: transparent;
+      color: inherit;
+      text-align: left;
+    }
+
+    .entry-row:hover,
+    .entry-row.active {
+      background: rgba(255, 250, 240, 0.84);
+    }
+
+    .date-tile {
+      display: grid;
+      place-items: center;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: rgba(246, 241, 232, 0.62);
+    }
+
+    .date-tile b {
+      display: block;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .date-tile small {
+      display: block;
+      margin-top: 3px;
+      font-size: 10px;
+    }
+
+    .entry-row h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.25;
+    }
+
+    .entry-row p {
+      display: -webkit-box;
+      margin: 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .row-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .type-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+    }
+
+    .type-dot.photo {
+      background: var(--gold);
+    }
+
+    .type-dot.vlog {
+      background: var(--wine);
+    }
+
+    .type-dot.thought {
+      background: var(--blue);
+    }
+
+    .bottom-tools {
+      display: flex;
+      gap: 8px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .ghost-button,
+    .text-button {
+      flex: 1;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 246, 0.5);
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .text-button {
+      flex: initial;
+      min-height: 34px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .file-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+
+    .gallery {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: 34px 34px 28px;
+      overflow: hidden;
+    }
+
+    .gallery-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .gallery-head h2 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: clamp(36px, 5vw, 76px);
+      font-weight: 500;
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .gallery-head p {
+      max-width: 330px;
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .timeline {
+      position: relative;
+      flex: 1;
+      overflow: auto;
+      padding: 8px 12px 38px 0;
+      scrollbar-width: thin;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 134px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(transparent, var(--line-strong) 8%, var(--line-strong) 92%, transparent);
+    }
+
+    .timeline-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: 112px 28px minmax(0, 1fr);
+      gap: 8px;
+      margin-bottom: 26px;
+      animation: rise 420ms ease both;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .time-stamp {
+      padding-top: 15px;
+      color: var(--muted);
+      text-align: right;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .node {
+      position: relative;
+      width: 15px;
+      height: 15px;
+      margin: 18px auto 0;
+      border: 2px solid var(--paper);
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 1px rgba(104, 120, 102, 0.3), 0 0 0 8px rgba(255, 250, 240, 0.7);
+      z-index: 1;
+    }
+
+    .card-body {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 250, 240, 0.72);
+      box-shadow: 0 14px 40px rgba(34, 29, 22, 0.08);
+      overflow: hidden;
+      transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .timeline-card.active .card-body,
+    .card-body:hover {
+      border-color: rgba(104, 120, 102, 0.5);
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
+
+    .media-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 1px;
+      min-height: 110px;
+      background: rgba(39, 36, 30, 0.08);
+    }
+
+    .media-strip.empty {
+      min-height: 72px;
+      background:
+        linear-gradient(120deg, rgba(104, 120, 102, 0.2), rgba(176, 139, 79, 0.18)),
+        repeating-linear-gradient(135deg, rgba(255, 252, 246, 0.3) 0, rgba(255, 252, 246, 0.3) 1px, transparent 1px, transparent 12px);
+    }
+
+    .media-item {
+      position: relative;
+      min-height: 110px;
+      overflow: hidden;
+      background: #e4d9c8;
+    }
+
+    .media-item img,
+    .media-item video {
+      width: 100%;
+      height: 100%;
+      min-height: 110px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .media-item video {
+      background: #1c1b18;
+    }
+
+    .media-badge {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: rgba(28, 27, 24, 0.72);
+      color: #fff8e9;
+      font-size: 11px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card-content {
+      padding: 22px 22px 20px;
+    }
+
+    .card-content h3 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 28px;
+      font-weight: 500;
+      line-height: 1.15;
+    }
+
+    .card-content p {
+      margin: 14px 0 0;
+      color: #3f3b34;
+      font-size: 15px;
+      line-height: 1.75;
+      white-space: pre-line;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 18px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      height: 26px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 12px;
+      background: rgba(255, 252, 246, 0.5);
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .editor {
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .editor-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .save-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .save-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px rgba(104, 120, 102, 0.13);
+    }
+
+    .primary-button {
+      padding: 0 14px;
+      background: #1f2b29;
+      color: #fff8e9;
+      box-shadow: 0 12px 26px rgba(31, 43, 41, 0.18);
+    }
+
+    .editor-form {
+      flex: 1;
+      overflow: auto;
+      padding: 24px;
+      scrollbar-width: thin;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .field input,
+    .field select {
+      height: 42px;
+      padding: 0 12px;
+    }
+
+    .field textarea {
+      min-height: 260px;
+      padding: 14px;
+      resize: vertical;
+      line-height: 1.7;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .title-input {
+      height: auto !important;
+      padding: 0 0 10px !important;
+      border: 0 !important;
+      border-bottom: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      font-family: var(--font-serif);
+      font-size: 34px;
+      line-height: 1.18;
+      box-shadow: none !important;
+    }
+
+    .upload-zone {
+      border: 1px dashed rgba(104, 120, 102, 0.46);
+      border-radius: var(--radius);
+      padding: 16px;
+      background: rgba(255, 252, 246, 0.44);
+    }
+
+    .upload-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .upload-progress {
+      display: none;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px 12px;
+      align-items: center;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .upload-progress.active {
+      display: grid;
+    }
+
+    .upload-progress strong {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--ink);
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .upload-track {
+      grid-column: 1 / -1;
+      height: 5px;
+      overflow: hidden;
+      border-radius: 3px;
+      background: rgba(49, 74, 91, 0.12);
+    }
+
+    .upload-track span {
+      display: block;
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--sage);
+      transition: width 160ms ease;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .preview {
+      position: relative;
+      min-height: 110px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #e9dfcf;
+    }
+
+    .preview img,
+    .preview video {
+      width: 100%;
+      height: 125px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .preview button {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(28, 27, 24, 0.72);
+      color: #fff8e9;
+    }
+
+    .empty-state {
+      padding: 40px 18px;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      color: var(--muted);
+      text-align: center;
+      background: rgba(255, 250, 240, 0.5);
+    }
+
+    .danger {
+      color: #8a3030;
+    }
+
+    dialog {
+      width: min(620px, calc(100vw - 32px));
+      max-height: min(760px, calc(100vh - 32px));
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--surface-solid);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+    }
+
+    dialog::backdrop {
+      background: rgba(28, 27, 24, 0.48);
+      backdrop-filter: blur(5px);
+    }
+
+    .dialog-head,
+    .dialog-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 20px;
+    }
+
+    .dialog-head {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .dialog-head h2 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 25px;
+      font-weight: 500;
+    }
+
+    .dialog-body {
+      max-height: 560px;
+      padding: 18px 20px;
+      overflow: auto;
+    }
+
+    .dialog-actions {
+      justify-content: flex-end;
+      border-top: 1px solid var(--line);
+    }
+
+    .dialog-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .dialog-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 246, 0.72);
+    }
+
+    .dialog-item h3,
+    .dialog-item p {
+      margin: 0;
+    }
+
+    .dialog-item h3 {
+      overflow: hidden;
+      font-size: 14px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dialog-item p {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .dialog-item-actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .dialog-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .dialog-message {
+      min-height: 20px;
+      margin: 0;
+      color: var(--wine);
+      font-size: 12px;
+    }
+
+    .login-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      grid-template-columns: minmax(300px, 0.9fr) minmax(420px, 1.1fr);
+      background:
+        linear-gradient(115deg, rgba(104, 120, 102, 0.18), transparent 42%),
+        linear-gradient(250deg, rgba(132, 78, 87, 0.15), transparent 44%),
+        var(--paper);
+    }
+
+    .login-screen[hidden] {
+      display: none;
+    }
+
+    .login-intro {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(32px, 6vw, 82px);
+      border-right: 1px solid var(--line);
+    }
+
+    .login-mark {
+      font-family: var(--font-serif);
+      font-size: 18px;
+    }
+
+    .login-intro h2 {
+      max-width: 650px;
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: clamp(54px, 8vw, 118px);
+      font-weight: 500;
+      line-height: 0.88;
+    }
+
+    .login-intro p {
+      max-width: 430px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .login-panel {
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        repeating-linear-gradient(90deg, rgba(49, 74, 91, 0.035) 0, rgba(49, 74, 91, 0.035) 1px, transparent 1px, transparent 72px),
+        rgba(255, 250, 240, 0.5);
+    }
+
+    .login-form {
+      width: min(100%, 430px);
+      padding: 34px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 246, 0.82);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .login-form h3 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 34px;
+      font-weight: 500;
+    }
+
+    .login-form > p {
+      margin: 10px 0 26px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .login-form .primary-button {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 6px;
+    }
+
+    .login-message {
+      min-height: 20px;
+      margin: 14px 0 0;
+      color: #8a3030;
+      font-size: 12px;
+    }
+
+    .login-note {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    [data-icon] {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 auto;
+      display: inline-block;
+      background: currentColor;
+      mask-repeat: no-repeat;
+      mask-position: center;
+      mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      -webkit-mask-size: contain;
+    }
+
+    [data-icon="plus"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z'/%3E%3C/svg%3E"); }
+    [data-icon="search"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10.5 4a6.5 6.5 0 0 1 5.17 10.44l4.45 4.44-1.42 1.42-4.44-4.45A6.5 6.5 0 1 1 10.5 4m0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10.5 4a6.5 6.5 0 0 1 5.17 10.44l4.45 4.44-1.42 1.42-4.44-4.45A6.5 6.5 0 1 1 10.5 4m0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9'/%3E%3C/svg%3E"); }
+    [data-icon="download"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 4h2v8l3-3 1.4 1.4L12 15.8l-5.4-5.4L8 9l3 3zm-5 14h12v-4h2v6H4v-6h2z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 4h2v8l3-3 1.4 1.4L12 15.8l-5.4-5.4L8 9l3 3zm-5 14h12v-4h2v6H4v-6h2z'/%3E%3C/svg%3E"); }
+    [data-icon="upload"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m12 4 5.4 5.4L16 10.8l-3-3V16h-2V7.8l-3 3-1.4-1.4zM6 18h12v-4h2v6H4v-6h2z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m12 4 5.4 5.4L16 10.8l-3-3V16h-2V7.8l-3 3-1.4-1.4zM6 18h12v-4h2v6H4v-6h2z'/%3E%3C/svg%3E"); }
+    [data-icon="trash"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9 3h6l1 2h4v2H4V5h4zm-2 6h2v10h6V9h2v12H7zm4 0h2v8h-2z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9 3h6l1 2h4v2H4V5h4zm-2 6h2v10h6V9h2v12H7zm4 0h2v8h-2z'/%3E%3C/svg%3E"); }
+    [data-icon="save"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 4h12l2 2v14H5zm2 2v12h10V7.2L15.8 6H15v5H8V6zm3 0v3h3V6zm-1 8h6v2H9z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 4h12l2 2v14H5zm2 2v12h10V7.2L15.8 6H15v5H8V6zm3 0v3h3V6zm-1 8h6v2H9z'/%3E%3C/svg%3E"); }
+    [data-icon="lock"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10V8a5 5 0 0 1 10 0v2h2v11H5V10zm2 0h6V8a3 3 0 0 0-6 0zm-2 2v7h10v-7z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10V8a5 5 0 0 1 10 0v2h2v11H5V10zm2 0h6V8a3 3 0 0 0-6 0zm-2 2v7h10v-7z'/%3E%3C/svg%3E"); }
+    [data-icon="image"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 5h16v14H4zm2 2v8.2l3.2-3.2 2.6 2.6 3.6-4.6L18 13.3V7zm0 10h12l-2.5-3.2-3.4 4.3-2.9-2.9zm11-8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 5h16v14H4zm2 2v8.2l3.2-3.2 2.6 2.6 3.6-4.6L18 13.3V7zm0 10h12l-2.5-3.2-3.4 4.3-2.9-2.9zm11-8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0'/%3E%3C/svg%3E"); }
+    [data-icon="video"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6h11v12H4zm2 2v8h7V8zm10 2 4-2v8l-4-2z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6h11v12H4zm2 2v8h7V8zm10 2 4-2v8l-4-2z'/%3E%3C/svg%3E"); }
+    [data-icon="x"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z'/%3E%3C/svg%3E"); }
+
+    .mobile-tabs {
+      display: none;
+    }
+
+    @media (max-width: 1120px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        display: block;
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .mobile-tabs {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-bottom: 1px solid var(--line);
+        background: rgba(246, 241, 232, 0.92);
+        backdrop-filter: blur(16px);
+      }
+
+      .mobile-tabs button {
+        min-height: 46px;
+        border-radius: 0;
+        background: transparent;
+        color: var(--muted);
+      }
+
+      .mobile-tabs button.active {
+        color: var(--ink);
+        box-shadow: inset 0 -2px #1f2b29;
+      }
+
+      .rail,
+      .gallery,
+      .editor {
+        display: none;
+        min-height: calc(100vh - 46px);
+      }
+
+      .rail.active,
+      .gallery.active,
+      .editor.active {
+        display: flex;
+      }
+
+      .rail,
+      .editor {
+        border: 0;
+      }
+
+      .gallery {
+        padding: 24px 18px;
+      }
+
+      .timeline::before {
+        left: 88px;
+      }
+
+      .timeline-card {
+        grid-template-columns: 70px 24px minmax(0, 1fr);
+      }
+
+      .gallery-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .gallery-head h2 {
+        font-size: 44px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .login-screen {
+        grid-template-columns: 1fr;
+        overflow: auto;
+      }
+
+      .login-intro {
+        min-height: 300px;
+        padding: 34px 24px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .login-intro h2 {
+        font-size: 58px;
+      }
+
+      .login-panel {
+        padding: 22px;
+      }
+
+      .login-form {
+        padding: 26px 22px;
+      }
+
+      .field-grid,
+      .preview-grid,
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .timeline-card {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .timeline::before,
+      .node {
+        display: none;
+      }
+
+      .time-stamp {
+        text-align: left;
+        padding-top: 0;
+      }
+
+      .card-content h3,
+      .title-input {
+        font-size: 28px;
+      }
+
+      .editor-top {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="login-screen" id="loginScreen" aria-labelledby="loginTitle">
+    <div class="login-intro">
+      <span class="login-mark">时间长廊 / Private Archive</span>
+      <div>
+        <h2>Keep the<br>moment.</h2>
+        <p>随笔、照片和影像，只为你保留。内容保存在你的私人云端账号中。</p>
+      </div>
+    </div>
+    <div class="login-panel">
+      <form class="login-form" id="loginForm">
+        <h3 id="loginTitle">欢迎回来</h3>
+        <p id="loginDescription">输入账号和密码，继续走进你的时间长廊。</p>
+        <div class="field">
+          <label id="usernameLabel" for="usernameInput">账号</label>
+          <input id="usernameInput" type="text" autocomplete="username" placeholder="请输入账号">
+        </div>
+        <div class="field">
+          <label for="passwordInput">密码</label>
+          <input id="passwordInput" type="password" autocomplete="current-password" placeholder="请输入密码">
+        </div>
+        <div class="field" id="confirmPasswordField" hidden>
+          <label for="confirmPasswordInput">确认密码</label>
+          <input id="confirmPasswordInput" type="password" autocomplete="new-password" placeholder="请再次输入密码">
+        </div>
+        <button class="primary-button" id="loginButton" type="submit">
+          <span data-icon="save"></span><span id="loginButtonText">进入日记</span>
+        </button>
+        <p class="login-message" id="loginMessage" role="alert"></p>
+        <div class="login-note" id="loginNote">预设账号可直接登录；其他账号首次使用时会在当前浏览器创建。各账号的日记分别保存，请定期使用“导出”备份。</div>
+      </form>
+    </div>
+  </section>
+
+  <div class="mobile-tabs" id="mobileTabs" aria-label="页面切换">
+    <button class="active" data-tab="gallery">长廊</button>
+    <button data-tab="rail">索引</button>
+    <button data-tab="editor">编辑</button>
+  </div>
+
+  <main class="app" id="diaryApp">
+    <aside class="rail" data-panel="rail">
+      <div class="brand">
+        <div>
+          <h1>时间长廊</h1>
+          <p id="brandDescription">随笔、照片、vlog 都放在这里。内容只保存在当前浏览器。</p>
+        </div>
+        <button class="icon-button" id="newEntryBtn" title="新建记录" aria-label="新建记录">
+          <span data-icon="plus"></span>
+        </button>
+      </div>
+
+      <div class="search-wrap">
+        <span class="search-icon" data-icon="search"></span>
+        <input id="searchInput" type="search" placeholder="搜索标题、正文、标签">
+      </div>
+
+      <div class="chips" id="filterChips" aria-label="类型筛选"></div>
+
+      <section class="stats" aria-label="记录统计">
+        <div class="stat">
+          <strong id="entryCount">0</strong>
+          <span>条记录</span>
+        </div>
+        <div class="stat">
+          <strong id="mediaCount">0</strong>
+          <span>份媒体</span>
+        </div>
+      </section>
+
+      <div class="entry-list" id="entryList"></div>
+
+      <div class="bottom-tools">
+        <button class="ghost-button" id="lockBtn"><span data-icon="lock"></span>锁定</button>
+        <button class="ghost-button" id="recycleBtn"><span data-icon="trash"></span>回收站</button>
+        <button class="ghost-button" id="accountBtn"><span data-icon="lock"></span>账号</button>
+        <button class="ghost-button" id="migrateBtn" hidden><span data-icon="upload"></span>迁移本地</button>
+        <button class="ghost-button" id="exportBtn"><span data-icon="download"></span>导出</button>
+        <label class="ghost-button" for="importInput"><span data-icon="upload"></span>导入</label>
+        <input class="file-hidden" id="importInput" type="file" accept="application/json">
+      </div>
+    </aside>
+
+    <section class="gallery active" data-panel="gallery">
+      <div class="gallery-head">
+        <h2>Memory<br>Walk</h2>
+        <p id="galleryIntro">今天也可以只写一句话。重要的是，某一刻被你留下来了。</p>
+      </div>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <section class="editor" data-panel="editor">
+      <div class="editor-top">
+        <div class="save-state">
+          <span class="save-dot" aria-hidden="true"></span>
+          <span id="saveState">已保存</span>
+        </div>
+        <div class="upload-actions">
+          <button class="text-button" id="historyBtn"><span data-icon="save"></span>历史</button>
+          <button class="text-button danger" id="deleteBtn"><span data-icon="trash"></span>删除</button>
+          <button class="primary-button" id="saveBtn"><span data-icon="save"></span>保存</button>
+        </div>
+      </div>
+
+      <form class="editor-form" id="editorForm">
+        <div class="field">
+          <label for="titleInput">标题</label>
+          <input class="title-input" id="titleInput" type="text" placeholder="给这一刻起个名字">
+        </div>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="dateInput">日期</label>
+            <input id="dateInput" type="datetime-local">
+          </div>
+          <div class="field">
+            <label for="typeInput">类型</label>
+            <select id="typeInput">
+              <option>随笔</option>
+              <option>照片</option>
+              <option>Vlog</option>
+              <option>想法</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="moodInput">心情</label>
+            <select id="moodInput">
+              <option>平静</option>
+              <option>开心</option>
+              <option>疲惫</option>
+              <option>清醒</option>
+              <option>想念</option>
+              <option>自由</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="tagsInput">标签</label>
+            <input id="tagsInput" type="text" placeholder="旅行, 朋友, 灵感">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="bodyInput">正文</label>
+          <textarea id="bodyInput" placeholder="今天发生了什么？也可以只放一句没头没尾的话。"></textarea>
+        </div>
+
+        <div class="field">
+          <label>照片与 Vlog</label>
+          <div class="upload-zone">
+            <div class="upload-actions">
+              <label class="ghost-button" for="mediaInput"><span data-icon="image"></span>添加照片或视频</label>
+              <input class="file-hidden" id="mediaInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm" multiple>
+            </div>
+            <div class="upload-progress" id="uploadProgress" aria-live="polite">
+              <strong id="uploadProgressName">准备上传</strong>
+              <span id="uploadProgressValue">0%</span>
+              <div class="upload-track"><span id="uploadProgressBar"></span></div>
+            </div>
+            <div class="preview-grid" id="previewGrid"></div>
+          </div>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <dialog id="recycleDialog" aria-labelledby="recycleTitle">
+    <div class="dialog-head">
+      <h2 id="recycleTitle">回收站</h2>
+      <button class="text-button" type="button" data-close-dialog="recycleDialog">关闭</button>
+    </div>
+    <div class="dialog-body">
+      <div class="dialog-list" id="recycleList"></div>
+    </div>
+  </dialog>
+
+  <dialog id="historyDialog" aria-labelledby="historyTitle">
+    <div class="dialog-head">
+      <h2 id="historyTitle">历史版本</h2>
+      <button class="text-button" type="button" data-close-dialog="historyDialog">关闭</button>
+    </div>
+    <div class="dialog-body">
+      <div class="dialog-list" id="historyList"></div>
+    </div>
+  </dialog>
+
+  <dialog id="accountDialog" aria-labelledby="accountTitle">
+    <div class="dialog-head">
+      <h2 id="accountTitle">账号安全</h2>
+      <button class="text-button" type="button" data-close-dialog="accountDialog">关闭</button>
+    </div>
+    <form class="dialog-body dialog-form" id="passwordForm">
+      <div class="field">
+        <label for="currentPasswordInput">当前密码</label>
+        <input id="currentPasswordInput" type="password" autocomplete="current-password">
+      </div>
+      <div class="field">
+        <label for="newPasswordInput">新密码（至少 12 位）</label>
+        <input id="newPasswordInput" type="password" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="newPasswordConfirmInput">确认新密码</label>
+        <input id="newPasswordConfirmInput" type="password" autocomplete="new-password">
+      </div>
+      <p class="dialog-message" id="passwordMessage" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="primary-button" type="submit"><span data-icon="lock"></span>更新密码</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    let DB_NAME = "time-corridor-diary";
+    const STORE_NAME = "entries";
+    const DB_VERSION = 1;
+    const MEDIA_BUCKET = "diary-media";
+    const SESSION_KEY = "time-corridor-account";
+    const CUSTOM_ACCOUNTS_KEY = "time-corridor-custom-accounts";
+    const CLOUD_CONFIG = window.DIARY_CONFIG || {};
+    const CLOUD_ENABLED = Boolean(
+      CLOUD_CONFIG.supabaseUrl &&
+      CLOUD_CONFIG.supabasePublishableKey
+    );
+    const TYPES = ["全部", "随笔", "照片", "Vlog", "想法"];
+    const typeClass = { "照片": "photo", "Vlog": "vlog", "想法": "thought", "随笔": "essay" };
+    const els = {
+      loginScreen: document.querySelector("#loginScreen"),
+      loginForm: document.querySelector("#loginForm"),
+      loginTitle: document.querySelector("#loginTitle"),
+      loginDescription: document.querySelector("#loginDescription"),
+      loginButtonText: document.querySelector("#loginButtonText"),
+      loginMessage: document.querySelector("#loginMessage"),
+      usernameLabel: document.querySelector("#usernameLabel"),
+      loginNote: document.querySelector("#loginNote"),
+      usernameInput: document.querySelector("#usernameInput"),
+      passwordInput: document.querySelector("#passwordInput"),
+      confirmPasswordInput: document.querySelector("#confirmPasswordInput"),
+      confirmPasswordField: document.querySelector("#confirmPasswordField"),
+      diaryApp: document.querySelector("#diaryApp"),
+      mobileTabBar: document.querySelector("#mobileTabs"),
+      newEntryBtn: document.querySelector("#newEntryBtn"),
+      searchInput: document.querySelector("#searchInput"),
+      filterChips: document.querySelector("#filterChips"),
+      entryList: document.querySelector("#entryList"),
+      timeline: document.querySelector("#timeline"),
+      entryCount: document.querySelector("#entryCount"),
+      mediaCount: document.querySelector("#mediaCount"),
+      galleryIntro: document.querySelector("#galleryIntro"),
+      brandDescription: document.querySelector("#brandDescription"),
+      editorForm: document.querySelector("#editorForm"),
+      titleInput: document.querySelector("#titleInput"),
+      dateInput: document.querySelector("#dateInput"),
+      typeInput: document.querySelector("#typeInput"),
+      moodInput: document.querySelector("#moodInput"),
+      tagsInput: document.querySelector("#tagsInput"),
+      bodyInput: document.querySelector("#bodyInput"),
+      mediaInput: document.querySelector("#mediaInput"),
+      uploadProgress: document.querySelector("#uploadProgress"),
+      uploadProgressName: document.querySelector("#uploadProgressName"),
+      uploadProgressValue: document.querySelector("#uploadProgressValue"),
+      uploadProgressBar: document.querySelector("#uploadProgressBar"),
+      previewGrid: document.querySelector("#previewGrid"),
+      saveBtn: document.querySelector("#saveBtn"),
+      deleteBtn: document.querySelector("#deleteBtn"),
+      saveState: document.querySelector("#saveState"),
+      lockBtn: document.querySelector("#lockBtn"),
+      recycleBtn: document.querySelector("#recycleBtn"),
+      accountBtn: document.querySelector("#accountBtn"),
+      historyBtn: document.querySelector("#historyBtn"),
+      migrateBtn: document.querySelector("#migrateBtn"),
+      exportBtn: document.querySelector("#exportBtn"),
+      importInput: document.querySelector("#importInput"),
+      recycleDialog: document.querySelector("#recycleDialog"),
+      recycleList: document.querySelector("#recycleList"),
+      historyDialog: document.querySelector("#historyDialog"),
+      historyList: document.querySelector("#historyList"),
+      accountDialog: document.querySelector("#accountDialog"),
+      passwordForm: document.querySelector("#passwordForm"),
+      currentPasswordInput: document.querySelector("#currentPasswordInput"),
+      newPasswordInput: document.querySelector("#newPasswordInput"),
+      newPasswordConfirmInput: document.querySelector("#newPasswordConfirmInput"),
+      passwordMessage: document.querySelector("#passwordMessage"),
+      mobileTabs: document.querySelectorAll(".mobile-tabs button"),
+      panels: document.querySelectorAll("[data-panel]")
+    };
+
+    let db;
+    let entries = [];
+    let recycledEntries = [];
+    let currentId = null;
+    let activeType = "全部";
+    let saveTimer = null;
+    let diaryReady = false;
+    let eventsBound = false;
+    let currentAccount = null;
+    let cloudClient = null;
+    let cloudUser = null;
+    let tusLibraryPromise = null;
+    const objectUrls = new Set();
+
+    function loadSupabaseLibrary() {
+      if (window.supabase?.createClient) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "./vendor/supabase-2.108.2.min.js";
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("无法加载 Supabase 客户端"));
+        document.head.appendChild(script);
+      });
+    }
+
+    function loadTusLibrary() {
+      if (window.tus?.Upload) return Promise.resolve();
+      if (tusLibraryPromise) return tusLibraryPromise;
+      tusLibraryPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "./vendor/tus-4.3.1.min.js";
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("无法加载视频上传组件"));
+        document.head.appendChild(script);
+      });
+      return tusLibraryPromise;
+    }
+
+    async function initCloudClient() {
+      if (!CLOUD_ENABLED || cloudClient) return;
+      await loadSupabaseLibrary();
+      cloudClient = window.supabase.createClient(
+        CLOUD_CONFIG.supabaseUrl,
+        CLOUD_CONFIG.supabasePublishableKey
+      );
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = "";
+      bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+      return btoa(binary);
+    }
+
+    async function hashPassword(password, salt) {
+      const passwordBytes = new TextEncoder().encode(password);
+      const keyMaterial = await crypto.subtle.importKey("raw", passwordBytes, "PBKDF2", false, ["deriveBits"]);
+      const bits = await crypto.subtle.deriveBits({
+        name: "PBKDF2",
+        salt,
+        iterations: 120000,
+        hash: "SHA-256"
+      }, keyMaterial, 256);
+      return bytesToBase64(new Uint8Array(bits));
+    }
+
+    function bytesToHex(bytes) {
+      return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    function hexToBytes(value) {
+      return Uint8Array.from(value.match(/.{2}/g) || [], byte => parseInt(byte, 16));
+    }
+
+    function normalizedUsername(username) {
+      return username.trim().toLowerCase();
+    }
+
+    function customAccounts() {
+      try {
+        return JSON.parse(localStorage.getItem(CUSTOM_ACCOUNTS_KEY)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function accountFor(username) {
+      const normalized = normalizedUsername(username);
+      return customAccounts()[normalized] || null;
+    }
+
+    function updateLoginMode() {
+      if (CLOUD_ENABLED) {
+        els.loginTitle.textContent = "云端登录";
+        els.loginDescription.textContent = "使用受邀邮箱和密码登录，多设备同步你的日记。";
+        els.loginButtonText.textContent = "登录";
+        els.confirmPasswordField.hidden = true;
+        els.loginMessage.textContent = "";
+        return;
+      }
+      const username = els.usernameInput.value.trim();
+      const isNewAccount = Boolean(username) && !accountFor(username);
+      els.loginTitle.textContent = isNewAccount ? "创建新账号" : "欢迎回来";
+      els.loginDescription.textContent = isNewAccount
+        ? "这是该账号第一次在此浏览器登录，请设置自己的密码。"
+        : "输入账号和密码，继续走进你的时间长廊。";
+      els.loginButtonText.textContent = isNewAccount ? "创建并进入" : "进入日记";
+      els.confirmPasswordField.hidden = !isNewAccount;
+      els.passwordInput.autocomplete = isNewAccount ? "new-password" : "current-password";
+      if (!isNewAccount) els.confirmPasswordInput.value = "";
+      els.loginMessage.textContent = "";
+    }
+
+    function draftKey() {
+      return currentAccount ? `time-corridor-draft-${currentAccount.name.toLowerCase()}` : null;
+    }
+
+    function showLogin() {
+      els.loginScreen.hidden = false;
+      els.diaryApp.inert = true;
+      els.mobileTabBar.inert = true;
+      els.loginTitle.textContent = CLOUD_ENABLED ? "云端登录" : "欢迎回来";
+      els.loginDescription.textContent = CLOUD_ENABLED
+        ? "使用受邀邮箱和密码登录，多设备同步你的日记。"
+        : "输入账号和密码，继续走进你的时间长廊。";
+      els.loginButtonText.textContent = CLOUD_ENABLED ? "登录" : "进入日记";
+      els.usernameLabel.textContent = CLOUD_ENABLED ? "邮箱" : "账号";
+      els.usernameInput.placeholder = CLOUD_ENABLED ? "name@example.com" : "请输入账号";
+      els.usernameInput.inputMode = CLOUD_ENABLED ? "email" : "text";
+      els.loginNote.textContent = CLOUD_ENABLED
+        ? "账号由管理员在 Supabase 中创建或邀请。每位用户只能访问自己的云端日记。"
+        : "预设账号可直接登录；其他账号首次使用时会在当前浏览器创建。各账号的日记分别保存，请定期使用“导出”备份。";
+      els.usernameInput.value = "";
+      els.passwordInput.value = "";
+      els.confirmPasswordInput.value = "";
+      els.confirmPasswordField.hidden = true;
+      els.loginMessage.textContent = "";
+      requestAnimationFrame(() => els.usernameInput.focus());
+    }
+
+    async function unlockDiary(account) {
+      const switchingAccount = currentAccount?.name !== account.name;
+      if (switchingAccount && db && !CLOUD_ENABLED) {
+        db.close();
+        db = null;
+        diaryReady = false;
+        entries = [];
+        currentId = null;
+        clearObjectUrls();
+      }
+      currentAccount = account;
+      if (!CLOUD_ENABLED) {
+        DB_NAME = account.database;
+        sessionStorage.setItem(SESSION_KEY, account.name);
+      }
+      els.loginScreen.hidden = true;
+      els.diaryApp.inert = false;
+      els.mobileTabBar.inert = false;
+      els.brandDescription.textContent = CLOUD_ENABLED
+        ? `${account.name} 的云端日记，可在多设备同步。`
+        : `${account.name} 的随笔、照片和 vlog。内容只保存在当前浏览器。`;
+      els.migrateBtn.hidden = !CLOUD_ENABLED;
+      els.accountBtn.hidden = !CLOUD_ENABLED;
+      els.historyBtn.hidden = !CLOUD_ENABLED;
+      if (!diaryReady) await initDiary();
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      if (CLOUD_ENABLED) {
+        const email = els.usernameInput.value.trim();
+        const password = els.passwordInput.value;
+        if (!email || !password) {
+          els.loginMessage.textContent = "请输入邮箱和密码。";
+          return;
+        }
+        els.loginMessage.textContent = "正在登录…";
+        const { data, error } = await cloudClient.auth.signInWithPassword({ email, password });
+        if (error || !data.user) {
+          els.loginMessage.textContent = "邮箱或密码不正确，或账号尚未受邀。";
+          return;
+        }
+        cloudUser = data.user;
+        await unlockDiary({
+          name: data.user.email || "云端用户",
+          userId: data.user.id
+        });
+        return;
+      }
+      const username = els.usernameInput.value.trim();
+      const normalized = normalizedUsername(username);
+      let account = accountFor(username);
+      const password = els.passwordInput.value;
+      if (username.length < 2 || username.length > 32) {
+        els.loginMessage.textContent = "账号名需要 2 至 32 个字符。";
+        return;
+      }
+      if (!account) {
+        if (password.length < 6) {
+          els.loginMessage.textContent = "新账号密码至少需要 6 位。";
+          return;
+        }
+        if (password !== els.confirmPasswordInput.value) {
+          els.loginMessage.textContent = "两次输入的密码不一致。";
+          return;
+        }
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        account = {
+          name: username,
+          salt: bytesToHex(salt),
+          hash: await hashPassword(password, salt),
+          database: `time-corridor-diary-user-${crypto.randomUUID()}`
+        };
+        const accounts = customAccounts();
+        accounts[normalized] = account;
+        localStorage.setItem(CUSTOM_ACCOUNTS_KEY, JSON.stringify(accounts));
+        await unlockDiary(account);
+        return;
+      }
+      if (!password) {
+        els.loginMessage.textContent = "请输入密码。";
+        return;
+      }
+      els.loginMessage.textContent = "";
+      const hash = await hashPassword(password, hexToBytes(account.salt));
+      if (hash !== account.hash) {
+        els.loginMessage.textContent = "账号或密码不正确。";
+        els.passwordInput.select();
+        return;
+      }
+      await unlockDiary(account);
+    }
+
+    async function lockDiary() {
+      storeDraft();
+      if (CLOUD_ENABLED) {
+        await cloudClient.auth.signOut();
+        cloudUser = null;
+        currentAccount = null;
+        diaryReady = false;
+        entries = [];
+        currentId = null;
+      } else {
+        sessionStorage.removeItem(SESSION_KEY);
+      }
+      showLogin();
+    }
+
+    function openDb() {
+      if (CLOUD_ENABLED) return Promise.resolve(null);
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+          const database = request.result;
+          if (!database.objectStoreNames.contains(STORE_NAME)) {
+            database.createObjectStore(STORE_NAME, { keyPath: "id" });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function tx(mode = "readonly") {
+      return db.transaction(STORE_NAME, mode).objectStore(STORE_NAME);
+    }
+
+    function cloudRowToEntry(row) {
+      return {
+        id: row.id,
+        title: row.title,
+        body: row.body,
+        type: row.entry_type,
+        mood: row.mood,
+        tags: row.tags || [],
+        createdAt: row.occurred_at,
+        updatedAt: row.updated_at,
+        deletedAt: row.deleted_at,
+        media: []
+      };
+    }
+
+    async function loadCloudMedia(entryList) {
+      if (!entryList.length) return entryList;
+      const { data, error } = await cloudClient
+        .from("media")
+        .select("id, entry_id, storage_path, file_name, mime_type, file_size, created_at")
+        .eq("user_id", cloudUser.id)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+
+      const mediaByEntry = new Map();
+      await Promise.all((data || []).map(async row => {
+        const { data: signedData, error: signedError } = await cloudClient.storage
+          .from(MEDIA_BUCKET)
+          .createSignedUrl(row.storage_path, 3600);
+        if (signedError) throw signedError;
+        const item = {
+          id: row.id,
+          entryId: row.entry_id,
+          path: row.storage_path,
+          name: row.file_name,
+          type: row.mime_type,
+          size: row.file_size,
+          createdAt: row.created_at,
+          url: signedData.signedUrl
+        };
+        const current = mediaByEntry.get(row.entry_id) || [];
+        current.push(item);
+        mediaByEntry.set(row.entry_id, current);
+      }));
+
+      return entryList.map(entry => ({
+        ...entry,
+        media: mediaByEntry.get(entry.id) || []
+      }));
+    }
+
+    function entryToCloudRow(entry) {
+      return {
+        id: entry.id,
+        user_id: cloudUser.id,
+        title: entry.title || "未命名的一天",
+        body: entry.body || "",
+        entry_type: entry.type || "随笔",
+        mood: entry.mood || "平静",
+        tags: entry.tags || [],
+        occurred_at: entry.createdAt,
+        updated_at: entry.updatedAt || new Date().toISOString(),
+        deleted_at: entry.deletedAt || null
+      };
+    }
+
+    async function getAllEntries() {
+      if (CLOUD_ENABLED) {
+        const { data, error } = await cloudClient
+          .from("entries")
+          .select("*")
+          .eq("user_id", cloudUser.id)
+          .order("occurred_at", { ascending: false });
+        if (error) throw error;
+        return loadCloudMedia((data || []).map(cloudRowToEntry));
+      }
+      return new Promise((resolve, reject) => {
+        const request = tx().getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function putEntry(entry) {
+      if (CLOUD_ENABLED) {
+        const { error } = await cloudClient
+          .from("entries")
+          .upsert(entryToCloudRow(entry), { onConflict: "id" });
+        if (error) throw error;
+        return entry;
+      }
+      return new Promise((resolve, reject) => {
+        const request = tx("readwrite").put(entry);
+        request.onsuccess = () => resolve(entry);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function removeEntry(id) {
+      if (CLOUD_ENABLED) {
+        const { error } = await cloudClient
+          .from("entries")
+          .delete()
+          .eq("id", id)
+          .eq("user_id", cloudUser.id);
+        if (error) throw error;
+        return;
+      }
+      return new Promise((resolve, reject) => {
+        const request = tx("readwrite").delete(id);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function formatDateForInput(dateString) {
+      const date = new Date(dateString);
+      const pad = value => String(value).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function formatLong(dateString) {
+      return new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "short" }).format(new Date(dateString));
+    }
+
+    function formatMonth(dateString) {
+      return new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "long" }).format(new Date(dateString));
+    }
+
+    function dayParts(dateString) {
+      const date = new Date(dateString);
+      return {
+        day: new Intl.DateTimeFormat("zh-CN", { day: "2-digit" }).format(date),
+        month: new Intl.DateTimeFormat("en", { month: "short" }).format(date)
+      };
+    }
+
+    function createEntry(seed = {}) {
+      const now = new Date().toISOString();
+      return {
+        id: crypto.randomUUID(),
+        title: seed.title || "未命名的一天",
+        body: seed.body || "",
+        type: seed.type || "随笔",
+        mood: seed.mood || "平静",
+        tags: seed.tags || [],
+        createdAt: seed.createdAt || now,
+        updatedAt: seed.updatedAt || now,
+        deletedAt: seed.deletedAt || null,
+        media: seed.media || []
+      };
+    }
+
+    function seedEntries() {
+      const today = new Date();
+      const daysAgo = days => new Date(today.getTime() - days * 86400000).toISOString();
+      return [
+        createEntry({
+          title: "把今天留在这里",
+          type: "随笔",
+          mood: "平静",
+          tags: ["开始", "日记"],
+          createdAt: daysAgo(0),
+          body: "这是你的第一条记录示例。你可以改掉它，也可以直接删除。\n\n这里适合放随笔、当天的碎片、忽然冒出来的念头。保存会自动发生。"
+        }),
+        createEntry({
+          title: "一段还没上传的视频",
+          type: "Vlog",
+          mood: "自由",
+          tags: ["vlog", "片段"],
+          createdAt: daysAgo(3),
+          body: "视频也可以放进来。点右侧的“添加照片或视频”，选一个本地视频，它会和这条记录一起留在浏览器里。"
+        }),
+        createEntry({
+          title: "照片应该有自己的位置",
+          type: "照片",
+          mood: "开心",
+          tags: ["照片", "生活"],
+          createdAt: daysAgo(9),
+          body: "上传照片之后，时间线会自动变成更像相册的记录卡。搜索时，标题、正文和标签都会被一起找。"
+        })
+      ];
+    }
+
+    function sortedEntries(list = entries) {
+      return [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    function adoptLoadedEntries(list) {
+      recycledEntries = sortedEntries(list.filter(entry => entry.deletedAt));
+      entries = sortedEntries(list.filter(entry => !entry.deletedAt));
+    }
+
+    function filteredEntries() {
+      const keyword = els.searchInput.value.trim().toLowerCase();
+      return sortedEntries().filter(entry => {
+        const typeMatch = activeType === "全部" || entry.type === activeType;
+        const haystack = [entry.title, entry.body, entry.mood, ...(entry.tags || [])].join(" ").toLowerCase();
+        return typeMatch && (!keyword || haystack.includes(keyword));
+      });
+    }
+
+    function getCurrentEntry() {
+      return entries.find(entry => entry.id === currentId) || null;
+    }
+
+    function escapeHtml(value = "") {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function clearObjectUrls() {
+      for (const url of objectUrls) URL.revokeObjectURL(url);
+      objectUrls.clear();
+    }
+
+    function mediaUrl(blob) {
+      const url = URL.createObjectURL(blob);
+      objectUrls.add(url);
+      return url;
+    }
+
+    function setSaveState(text, busy = false) {
+      els.saveState.textContent = text;
+      document.querySelector(".save-dot").style.background = busy ? "var(--gold)" : "var(--sage)";
+    }
+
+    function renderChips() {
+      els.filterChips.innerHTML = TYPES.map(type => (
+        `<button class="chip ${type === activeType ? "active" : ""}" data-type="${type}">${type}</button>`
+      )).join("");
+    }
+
+    function renderStats() {
+      els.entryCount.textContent = entries.length;
+      els.mediaCount.textContent = entries.reduce((sum, entry) => sum + (entry.media?.length || 0), 0);
+    }
+
+    function renderList() {
+      const list = filteredEntries();
+      if (!list.length) {
+        els.entryList.innerHTML = `<div class="empty-state">没有找到记录</div>`;
+        return;
+      }
+      let currentMonth = "";
+      els.entryList.innerHTML = list.map(entry => {
+        const month = formatMonth(entry.createdAt);
+        const parts = dayParts(entry.createdAt);
+        const monthHtml = month !== currentMonth ? `<div class="month-title">${month}</div>` : "";
+        currentMonth = month;
+        return `${monthHtml}
+          <button class="entry-row ${entry.id === currentId ? "active" : ""}" data-id="${entry.id}">
+            <span class="date-tile"><b>${parts.day}</b><small>${parts.month}</small></span>
+            <span>
+              <h3>${escapeHtml(entry.title || "未命名的一天")}</h3>
+              <p>${escapeHtml(entry.body || "还没有正文")}</p>
+              <span class="row-meta">
+                <span class="type-dot ${typeClass[entry.type] || ""}"></span>
+                ${escapeHtml(entry.type)} · ${escapeHtml(entry.mood)}
+              </span>
+            </span>
+          </button>`;
+      }).join("");
+    }
+
+    function renderTimeline() {
+      const list = filteredEntries();
+      if (!list.length) {
+        els.timeline.innerHTML = `<div class="empty-state">这里暂时没有符合条件的记录</div>`;
+        return;
+      }
+      els.timeline.innerHTML = list.map((entry, index) => {
+        const media = entry.media || [];
+        const mediaHtml = media.length
+          ? `<div class="media-strip">${media.slice(0, 3).map(item => {
+              const url = item.url || mediaUrl(item.blob);
+              const isVideo = item.type.startsWith("video/");
+              return `<div class="media-item">
+                ${isVideo ? `<video src="${url}" controls playsinline preload="metadata"></video>` : `<img src="${url}" alt="${escapeHtml(item.name)}">`}
+                <span class="media-badge"><span data-icon="${isVideo ? "video" : "image"}"></span>${isVideo ? "Vlog" : "Photo"}</span>
+              </div>`;
+            }).join("")}</div>`
+          : `<div class="media-strip empty"></div>`;
+        const tags = (entry.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("");
+        return `<article class="timeline-card ${entry.id === currentId ? "active" : ""}" data-id="${entry.id}" style="animation-delay:${Math.min(index * 35, 260)}ms">
+          <div class="time-stamp">${formatLong(entry.createdAt)}<br>${escapeHtml(entry.mood)}</div>
+          <div class="node"></div>
+          <div class="card-body">
+            ${mediaHtml}
+            <div class="card-content">
+              <h3>${escapeHtml(entry.title || "未命名的一天")}</h3>
+              <p>${escapeHtml(entry.body || "还没有正文")}</p>
+              ${tags ? `<div class="tag-row">${tags}</div>` : ""}
+            </div>
+            <div class="card-footer">
+              <span>${escapeHtml(entry.type)}</span>
+              <span>${media.length ? `${media.length} 份媒体` : "文字记录"}</span>
+            </div>
+          </div>
+        </article>`;
+      }).join("");
+    }
+
+    function renderPreview() {
+      const entry = getCurrentEntry();
+      const media = entry?.media || [];
+      if (!media.length) {
+        els.previewGrid.innerHTML = `<div class="empty-state">还没有照片或视频</div>`;
+        return;
+      }
+      els.previewGrid.innerHTML = media.map((item, index) => {
+        const url = item.url || mediaUrl(item.blob);
+        const isVideo = item.type.startsWith("video/");
+        return `<div class="preview">
+          ${isVideo ? `<video src="${url}" controls playsinline preload="metadata"></video>` : `<img src="${url}" alt="${escapeHtml(item.name)}">`}
+          <button type="button" data-remove-media="${index}" title="移除媒体" aria-label="移除媒体"><span data-icon="x"></span></button>
+        </div>`;
+      }).join("");
+    }
+
+    function loadEditor(entry) {
+      if (!entry) return;
+      currentId = entry.id;
+      els.titleInput.value = entry.title || "";
+      els.dateInput.value = formatDateForInput(entry.createdAt);
+      els.typeInput.value = entry.type || "随笔";
+      els.moodInput.value = entry.mood || "平静";
+      els.tagsInput.value = (entry.tags || []).join(", ");
+      els.bodyInput.value = entry.body || "";
+      renderAll();
+      setSaveState("已保存");
+    }
+
+    function collectEditor() {
+      const entry = getCurrentEntry();
+      if (!entry) return null;
+      return {
+        ...entry,
+        title: els.titleInput.value.trim() || "未命名的一天",
+        body: els.bodyInput.value,
+        type: els.typeInput.value,
+        mood: els.moodInput.value,
+        tags: els.tagsInput.value.split(/[,，]/).map(tag => tag.trim()).filter(Boolean),
+        createdAt: new Date(els.dateInput.value || Date.now()).toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    function storeDraft() {
+      const entry = collectEditor();
+      const key = draftKey();
+      if (!entry || !key) return;
+      const { media, ...draft } = entry;
+      localStorage.setItem(key, JSON.stringify(draft));
+    }
+
+    async function restoreDraft() {
+      const key = draftKey();
+      if (!key) return;
+      let draft;
+      try {
+        draft = JSON.parse(localStorage.getItem(key));
+      } catch {
+        localStorage.removeItem(key);
+        return;
+      }
+      if (!draft?.id) return;
+      const index = entries.findIndex(entry => entry.id === draft.id);
+      if (index < 0) {
+        localStorage.removeItem(key);
+        return;
+      }
+      const restored = { ...entries[index], ...draft, media: entries[index].media || [] };
+      entries[index] = restored;
+      await putEntry(restored);
+      localStorage.removeItem(key);
+    }
+
+    async function saveCurrent({ silent = false } = {}) {
+      const entry = collectEditor();
+      if (!entry) return;
+      if (!silent) setSaveState("保存中", true);
+      await putEntry(entry);
+      entries = entries.map(item => item.id === entry.id ? entry : item);
+      const key = draftKey();
+      if (key) localStorage.removeItem(key);
+      setSaveState("已自动保存");
+      renderAll();
+    }
+
+    function scheduleSave() {
+      setSaveState("编辑中", true);
+      storeDraft();
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => saveCurrent({ silent: true }), 650);
+    }
+
+    function renderAll() {
+      clearObjectUrls();
+      renderChips();
+      renderStats();
+      renderList();
+      renderTimeline();
+      renderPreview();
+    }
+
+    async function addNewEntry() {
+      const entry = createEntry({ title: "新记录", body: "", type: "随笔" });
+      entries.unshift(entry);
+      await putEntry(entry);
+      loadEditor(entry);
+      showPanel("editor");
+      els.titleInput.select();
+    }
+
+    async function deleteCloudMedia(mediaItems) {
+      const paths = (mediaItems || []).map(item => item.path).filter(Boolean);
+      if (!paths.length) return;
+      const { error } = await cloudClient.storage.from(MEDIA_BUCKET).remove(paths);
+      if (error) throw error;
+    }
+
+    async function deleteCurrent() {
+      const entry = getCurrentEntry();
+      if (!entry) return;
+      const ok = confirm(`将「${entry.title || "未命名的一天"}」移入回收站吗？照片和视频会一起保留。`);
+      if (!ok) return;
+      entry.deletedAt = new Date().toISOString();
+      entry.updatedAt = new Date().toISOString();
+      await putEntry(entry);
+      recycledEntries.unshift(entry);
+      entries = entries.filter(item => item.id !== entry.id);
+      currentId = entries[0]?.id || null;
+      if (entries.length) {
+        loadEditor(sortedEntries()[0]);
+      } else {
+        await addNewEntry();
+      }
+      setSaveState("已移入回收站");
+      renderAll();
+    }
+
+    function renderRecycleBin() {
+      if (!recycledEntries.length) {
+        els.recycleList.innerHTML = `<div class="empty-state">回收站是空的</div>`;
+        return;
+      }
+      els.recycleList.innerHTML = sortedEntries(recycledEntries).map(entry => `
+        <div class="dialog-item">
+          <div>
+            <h3>${escapeHtml(entry.title || "未命名的一天")}</h3>
+            <p>${formatLong(entry.deletedAt || entry.updatedAt)}移入 · ${(entry.media || []).length} 份媒体</p>
+          </div>
+          <div class="dialog-item-actions">
+            <button class="ghost-button" type="button" data-restore-entry="${entry.id}">恢复</button>
+            <button class="text-button danger" type="button" data-purge-entry="${entry.id}">永久删除</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function restoreRecycledEntry(id) {
+      const entry = recycledEntries.find(item => item.id === id);
+      if (!entry) return;
+      entry.deletedAt = null;
+      entry.updatedAt = new Date().toISOString();
+      await putEntry(entry);
+      recycledEntries = recycledEntries.filter(item => item.id !== id);
+      entries.unshift(entry);
+      loadEditor(entry);
+      renderRecycleBin();
+      renderAll();
+      setSaveState("日记已恢复");
+    }
+
+    async function permanentlyDeleteEntry(id) {
+      const entry = recycledEntries.find(item => item.id === id);
+      if (!entry) return;
+      const ok = confirm(`永久删除「${entry.title || "未命名的一天"}」吗？文字、照片和视频都无法恢复。`);
+      if (!ok) return;
+      if (CLOUD_ENABLED) await deleteCloudMedia(entry.media);
+      await removeEntry(id);
+      recycledEntries = recycledEntries.filter(item => item.id !== id);
+      renderRecycleBin();
+      renderAll();
+    }
+
+    async function loadEntryVersions(entryId) {
+      if (!CLOUD_ENABLED) return [];
+      const { data, error } = await cloudClient
+        .from("entry_versions")
+        .select("id, entry_id, title, body, entry_type, mood, tags, occurred_at, versioned_at")
+        .eq("entry_id", entryId)
+        .eq("user_id", cloudUser.id)
+        .order("versioned_at", { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      return data || [];
+    }
+
+    async function openHistory() {
+      const entry = getCurrentEntry();
+      if (!entry) return;
+      els.historyList.innerHTML = `<div class="empty-state">正在读取历史版本…</div>`;
+      els.historyDialog.showModal();
+      const versions = await loadEntryVersions(entry.id);
+      if (!versions.length) {
+        els.historyList.innerHTML = `<div class="empty-state">修改并保存日记后，上一版会自动出现在这里</div>`;
+        return;
+      }
+      els.historyList.innerHTML = versions.map(version => `
+        <div class="dialog-item">
+          <div>
+            <h3>${escapeHtml(version.title || "未命名的一天")}</h3>
+            <p>${new Date(version.versioned_at).toLocaleString("zh-CN")} · ${escapeHtml((version.body || "").slice(0, 70) || "无正文")}</p>
+          </div>
+          <button class="ghost-button" type="button" data-restore-version="${version.id}">恢复此版本</button>
+        </div>
+      `).join("");
+    }
+
+    async function restoreVersion(versionId) {
+      const entry = getCurrentEntry();
+      if (!entry) return;
+      const { data: version, error } = await cloudClient
+        .from("entry_versions")
+        .select("title, body, entry_type, mood, tags, occurred_at")
+        .eq("id", versionId)
+        .eq("user_id", cloudUser.id)
+        .single();
+      if (error) throw error;
+      const restored = {
+        ...entry,
+        title: version.title,
+        body: version.body,
+        type: version.entry_type,
+        mood: version.mood,
+        tags: version.tags || [],
+        createdAt: version.occurred_at,
+        updatedAt: new Date().toISOString()
+      };
+      await putEntry(restored);
+      entries = entries.map(item => item.id === restored.id ? restored : item);
+      loadEditor(restored);
+      els.historyDialog.close();
+      setSaveState("历史版本已恢复");
+    }
+
+    async function updatePassword(event) {
+      event.preventDefault();
+      const currentPassword = els.currentPasswordInput.value;
+      const nextPassword = els.newPasswordInput.value;
+      if (nextPassword.length < 12) {
+        els.passwordMessage.textContent = "新密码至少需要 12 位。";
+        return;
+      }
+      if (nextPassword !== els.newPasswordConfirmInput.value) {
+        els.passwordMessage.textContent = "两次输入的新密码不一致。";
+        return;
+      }
+      els.passwordMessage.textContent = "正在验证当前密码…";
+      const { error: loginError } = await cloudClient.auth.signInWithPassword({
+        email: cloudUser.email,
+        password: currentPassword
+      });
+      if (loginError) {
+        els.passwordMessage.textContent = "当前密码不正确。";
+        return;
+      }
+      const { error } = await cloudClient.auth.updateUser({ password: nextPassword });
+      if (error) {
+        els.passwordMessage.textContent = error.message || "暂时无法修改密码。";
+        return;
+      }
+      els.passwordForm.reset();
+      els.passwordMessage.textContent = "密码已更新。";
+    }
+
+    function compressImage(file, maxWidth = 1920, maxHeight = 1920, quality = 0.82) {
+      return new Promise(resolve => {
+        if (!file.type.startsWith("image/") || ["image/gif", "image/svg+xml"].includes(file.type)) {
+          resolve(file);
+          return;
+        }
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          let { width, height } = img;
+          const needsResize = width > maxWidth || height > maxHeight;
+          const needsCompression = file.size > 1.5 * 1024 * 1024;
+          if (!needsResize && !needsCompression) {
+            resolve(file);
+            return;
+          }
+          if (needsResize) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(file);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const preservesAlpha = ["image/png", "image/webp"].includes(file.type);
+          const outputType = preservesAlpha ? "image/webp" : "image/jpeg";
+          const extension = outputType === "image/webp" ? ".webp" : ".jpg";
+          canvas.toBlob(blob => {
+            if (!blob || blob.size >= file.size) {
+              resolve(file);
+              return;
+            }
+            const name = file.name.includes(".")
+              ? file.name.replace(/\.[^.]+$/, extension)
+              : `${file.name}${extension}`;
+            resolve(new File([blob], name, { type: outputType }));
+          }, outputType, quality);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+      });
+    }
+
+    function setUploadProgress(fileName = "", percentage = 0, active = true) {
+      const safePercentage = Math.max(0, Math.min(100, Math.round(percentage)));
+      els.uploadProgress.classList.toggle("active", active);
+      els.uploadProgressName.textContent = fileName || "准备上传";
+      els.uploadProgressValue.textContent = `${safePercentage}%`;
+      els.uploadProgressBar.style.width = `${safePercentage}%`;
+    }
+
+    function hideUploadProgress() {
+      window.setTimeout(() => setUploadProgress("", 0, false), 650);
+    }
+
+    function isVideoFile(file) {
+      return file.type.startsWith("video/");
+    }
+
+    function safeExtension(file, fallback) {
+      const extension = file.name.includes(".")
+        ? file.name.split(".").pop().toLowerCase().replace(/[^a-z0-9]/g, "")
+        : "";
+      return extension || fallback;
+    }
+
+    async function uploadVideoResumable(file, storagePath, onProgress) {
+      await loadTusLibrary();
+      const { data: { session }, error: sessionError } = await cloudClient.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        throw sessionError || new Error("登录状态已失效，请重新登录");
+      }
+      const projectRef = new URL(CLOUD_CONFIG.supabaseUrl).hostname.split(".")[0];
+      return new Promise((resolve, reject) => {
+        const upload = new window.tus.Upload(file, {
+          endpoint: `https://${projectRef}.storage.supabase.co/storage/v1/upload/resumable`,
+          retryDelays: [0, 3000, 5000, 10000, 20000],
+          headers: {
+            authorization: `Bearer ${session.access_token}`,
+            apikey: CLOUD_CONFIG.supabasePublishableKey
+          },
+          uploadDataDuringCreation: true,
+          removeFingerprintOnSuccess: true,
+          chunkSize: 6 * 1024 * 1024,
+          metadata: {
+            bucketName: MEDIA_BUCKET,
+            objectName: storagePath,
+            contentType: file.type,
+            cacheControl: "3600"
+          },
+          onError: reject,
+          onProgress(bytesUploaded, bytesTotal) {
+            onProgress(bytesTotal ? (bytesUploaded / bytesTotal) * 100 : 0);
+          },
+          onSuccess() {
+            resolve();
+          }
+        });
+        upload.findPreviousUploads()
+          .then(previousUploads => {
+            if (previousUploads.length) upload.resumeFromPreviousUpload(previousUploads[0]);
+            upload.start();
+          })
+          .catch(reject);
+      });
+    }
+
+    async function uploadCloudFile(file, storagePath, onProgress) {
+      if (isVideoFile(file)) {
+        await uploadVideoResumable(file, storagePath, onProgress);
+        return;
+      }
+      onProgress(12);
+      const { error } = await cloudClient.storage
+        .from(MEDIA_BUCKET)
+        .upload(storagePath, file, {
+          cacheControl: "3600",
+          contentType: file.type,
+          upsert: false
+        });
+      if (error) throw error;
+      onProgress(100);
+    }
+
+    async function addMedia(files) {
+      const entry = getCurrentEntry();
+      if (!entry || !files.length) return;
+      if (CLOUD_ENABLED) {
+        const allowedTypes = new Set([
+          "image/jpeg", "image/png", "image/webp", "image/gif",
+          "video/mp4", "video/quicktime", "video/webm"
+        ]);
+        const selected = Array.from(files).filter(file => allowedTypes.has(file.type));
+        if (!selected.length) {
+          els.mediaInput.value = "";
+          alert("请选择 JPEG、PNG、WebP、GIF 图片，或 MP4、MOV、WebM 视频。");
+          return;
+        }
+        const additions = [];
+        const failures = [];
+        for (let index = 0; index < selected.length; index++) {
+          const file = selected[index];
+          const video = isVideoFile(file);
+          setSaveState(`上传${video ? "视频" : "照片"} ${index + 1}/${selected.length}`, true);
+          setUploadProgress(file.name, 0);
+          try {
+            const uploadFile = video ? file : await compressImage(file);
+            const maxSize = video ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+            if (uploadFile.size > maxSize) {
+              throw new Error(`${file.name} 超过 ${video ? 50 : 10} MB`);
+            }
+            const mediaId = crypto.randomUUID();
+            const extension = safeExtension(uploadFile, video ? "mp4" : "jpg");
+            const storagePath = `${cloudUser.id}/${entry.id}/${mediaId}.${extension}`;
+            await uploadCloudFile(uploadFile, storagePath, percentage => {
+              setUploadProgress(file.name, percentage);
+              setSaveState(`上传${video ? "视频" : "照片"} ${Math.round(percentage)}%`, true);
+            });
+
+            const mediaRow = {
+              id: mediaId,
+              user_id: cloudUser.id,
+              entry_id: entry.id,
+              storage_path: storagePath,
+              file_name: uploadFile.name,
+              mime_type: uploadFile.type,
+              file_size: uploadFile.size
+            };
+            const { data: inserted, error: insertError } = await cloudClient
+              .from("media")
+              .insert(mediaRow)
+              .select("id, entry_id, storage_path, file_name, mime_type, file_size, created_at")
+              .single();
+            if (insertError) {
+              await cloudClient.storage.from(MEDIA_BUCKET).remove([storagePath]);
+              throw insertError;
+            }
+            const { data: signedData, error: signedError } = await cloudClient.storage
+              .from(MEDIA_BUCKET)
+              .createSignedUrl(storagePath, 3600);
+            if (signedError) throw signedError;
+            additions.push({
+              id: inserted.id,
+              entryId: inserted.entry_id,
+              path: inserted.storage_path,
+              name: inserted.file_name,
+              type: inserted.mime_type,
+              size: inserted.file_size,
+              createdAt: inserted.created_at,
+              url: signedData.signedUrl
+            });
+          } catch (error) {
+            console.error(error);
+            failures.push(`${file.name}：${error.message || "上传失败"}`);
+          }
+        }
+        entry.media = [...(entry.media || []), ...additions];
+        entries = entries.map(item => item.id === entry.id ? entry : item);
+        els.mediaInput.value = "";
+        hideUploadProgress();
+        setSaveState(failures.length ? `已上传 ${additions.length} 份，${failures.length} 份失败` : "媒体已同步");
+        renderAll();
+        if (failures.length) alert(`以下媒体上传失败：\n${failures.join("\n")}`);
+        return;
+      }
+      setSaveState("添加媒体中", true);
+      const additions = [];
+      for (const file of Array.from(files)) {
+        if (isVideoFile(file) && file.size > 50 * 1024 * 1024) {
+          alert(`${file.name} 超过 50 MB，未添加。`);
+          continue;
+        }
+        const compressed = isVideoFile(file) ? file : await compressImage(file);
+        additions.push({
+          id: crypto.randomUUID(),
+          name: compressed.name,
+          type: compressed.type || "application/octet-stream",
+          size: compressed.size,
+          blob: compressed
+        });
+      }
+      entry.media = [...(entry.media || []), ...additions];
+      await putEntry(entry);
+      entries = entries.map(item => item.id === entry.id ? entry : item);
+      els.mediaInput.value = "";
+      setSaveState("已保存");
+      renderAll();
+    }
+
+    async function removeMedia(index) {
+      const entry = getCurrentEntry();
+      if (!entry) return;
+      const target = (entry.media || [])[index];
+      if (!target) return;
+      if (CLOUD_ENABLED) {
+        setSaveState(`删除${target.type.startsWith("video/") ? "视频" : "照片"}中`, true);
+        const { error: storageError } = await cloudClient.storage
+          .from(MEDIA_BUCKET)
+          .remove([target.path]);
+        if (storageError) throw storageError;
+        const { error: mediaError } = await cloudClient
+          .from("media")
+          .delete()
+          .eq("id", target.id)
+          .eq("user_id", cloudUser.id);
+        if (mediaError) throw mediaError;
+        entry.media = entry.media.filter((_, itemIndex) => itemIndex !== index);
+        entries = entries.map(item => item.id === entry.id ? entry : item);
+        setSaveState("媒体已删除");
+        renderAll();
+        return;
+      }
+      entry.media = (entry.media || []).filter((_, itemIndex) => itemIndex !== index);
+      await putEntry(entry);
+      entries = entries.map(item => item.id === entry.id ? entry : item);
+      renderAll();
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function dataUrlToBlob(dataUrl) {
+      const [header, data] = dataUrl.split(",");
+      const mime = header.match(/:(.*?);/)?.[1] || "application/octet-stream";
+      const binary = atob(data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new Blob([bytes], { type: mime });
+    }
+
+    async function mediaItemToExport(item) {
+      let blob = item.blob;
+      if (!blob && item.url) {
+        const response = await fetch(item.url);
+        if (!response.ok) throw new Error(`无法导出 ${item.name}`);
+        blob = await response.blob();
+      }
+      return {
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        size: item.size,
+        dataUrl: blob ? await blobToDataUrl(blob) : null
+      };
+    }
+
+    async function exportDiary() {
+      setSaveState("整理导出中", true);
+      const payload = {
+        app: "时间长廊",
+        exportedAt: new Date().toISOString(),
+        entries: await Promise.all(sortedEntries().map(async entry => ({
+          ...entry,
+          media: await Promise.all((entry.media || []).map(mediaItemToExport))
+        })))
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `time-corridor-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setSaveState("已保存");
+    }
+
+    async function importDiary(file) {
+      if (!file) return;
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      const incoming = await Promise.all((payload.entries || []).map(async entry => ({
+        ...entry,
+        id: entry.id || crypto.randomUUID(),
+        media: CLOUD_ENABLED ? [] : (entry.media || []).map(item => ({
+          id: item.id || crypto.randomUUID(),
+          name: item.name,
+          type: item.type,
+          size: item.size,
+          blob: dataUrlToBlob(item.dataUrl)
+        }))
+      })));
+      for (const entry of incoming) await putEntry(entry);
+      adoptLoadedEntries(await getAllEntries());
+      if (entries[0]) loadEditor(entries[0]);
+      renderAll();
+    }
+
+    function readEntriesFromDatabase(databaseName) {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(databaseName, DB_VERSION);
+        request.onsuccess = () => {
+          const database = request.result;
+          if (!database.objectStoreNames.contains(STORE_NAME)) {
+            database.close();
+            resolve([]);
+            return;
+          }
+          const transaction = database.transaction(STORE_NAME, "readonly");
+          const getRequest = transaction.objectStore(STORE_NAME).getAll();
+          getRequest.onsuccess = () => {
+            database.close();
+            resolve(getRequest.result || []);
+          };
+          getRequest.onerror = () => reject(getRequest.error);
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function migrateLocalEntries() {
+      if (!CLOUD_ENABLED) return;
+      const approved = confirm(
+        "将把此浏览器旧版日记中的文字内容上传到当前云端账号。照片和视频暂不迁移。是否继续？"
+      );
+      if (!approved) return;
+      setSaveState("迁移中", true);
+      const localEntries = await readEntriesFromDatabase("time-corridor-diary");
+      if (!localEntries.length) {
+        setSaveState("没有可迁移的本地日记");
+        return;
+      }
+      for (const localEntry of localEntries) {
+        const migratedEntry = {
+          ...localEntry,
+          id: crypto.randomUUID(),
+          media: [],
+          updatedAt: new Date().toISOString()
+        };
+        await putEntry(migratedEntry);
+      }
+      adoptLoadedEntries(await getAllEntries());
+      currentId = entries[0]?.id || null;
+      if (entries[0]) loadEditor(entries[0]);
+      renderAll();
+      setSaveState(`已迁移 ${localEntries.length} 条`);
+    }
+
+    function showPanel(name) {
+      els.panels.forEach(panel => panel.classList.toggle("active", panel.dataset.panel === name));
+      els.mobileTabs.forEach(tab => tab.classList.toggle("active", tab.dataset.tab === name));
+    }
+
+    function bindEvents() {
+      els.lockBtn.addEventListener("click", lockDiary);
+      els.recycleBtn.addEventListener("click", () => {
+        renderRecycleBin();
+        els.recycleDialog.showModal();
+      });
+      els.accountBtn.addEventListener("click", () => {
+        els.passwordForm.reset();
+        els.passwordMessage.textContent = cloudUser?.email || "";
+        els.accountDialog.showModal();
+      });
+      els.historyBtn.addEventListener("click", () => {
+        openHistory().catch(error => {
+          console.error(error);
+          setSaveState("无法读取历史版本", true);
+        });
+      });
+      document.addEventListener("click", event => {
+        const closeButton = event.target.closest("[data-close-dialog]");
+        if (closeButton) document.querySelector(`#${closeButton.dataset.closeDialog}`)?.close();
+      });
+      els.recycleList.addEventListener("click", event => {
+        const restoreButton = event.target.closest("[data-restore-entry]");
+        const purgeButton = event.target.closest("[data-purge-entry]");
+        if (restoreButton) restoreRecycledEntry(restoreButton.dataset.restoreEntry).catch(console.error);
+        if (purgeButton) permanentlyDeleteEntry(purgeButton.dataset.purgeEntry).catch(console.error);
+      });
+      els.historyList.addEventListener("click", event => {
+        const button = event.target.closest("[data-restore-version]");
+        if (button) restoreVersion(button.dataset.restoreVersion).catch(console.error);
+      });
+      els.passwordForm.addEventListener("submit", event => {
+        updatePassword(event).catch(error => {
+          console.error(error);
+          els.passwordMessage.textContent = "修改密码失败，请稍后重试。";
+        });
+      });
+      els.migrateBtn.addEventListener("click", () => {
+        migrateLocalEntries().catch(error => {
+          console.error(error);
+          setSaveState("迁移失败，请稍后重试", true);
+        });
+      });
+      els.newEntryBtn.addEventListener("click", addNewEntry);
+      els.saveBtn.addEventListener("click", event => {
+        event.preventDefault();
+        saveCurrent();
+      });
+      els.deleteBtn.addEventListener("click", event => {
+        event.preventDefault();
+        deleteCurrent();
+      });
+      els.searchInput.addEventListener("input", () => renderAll(false));
+      els.filterChips.addEventListener("click", event => {
+        const button = event.target.closest("[data-type]");
+        if (!button) return;
+        activeType = button.dataset.type;
+        renderAll();
+      });
+      els.entryList.addEventListener("click", event => {
+        const row = event.target.closest("[data-id]");
+        if (!row) return;
+        const entry = entries.find(item => item.id === row.dataset.id);
+        loadEditor(entry);
+        showPanel("editor");
+      });
+      els.timeline.addEventListener("click", event => {
+        if (event.target.closest("video")) return;
+        const card = event.target.closest("[data-id]");
+        if (!card) return;
+        const entry = entries.find(item => item.id === card.dataset.id);
+        loadEditor(entry);
+      });
+      ["input", "change"].forEach(type => {
+        els.editorForm.addEventListener(type, event => {
+          if (event.target === els.mediaInput) return;
+          scheduleSave();
+        });
+      });
+      els.mediaInput.addEventListener("change", event => {
+        addMedia(event.target.files).catch(error => {
+          console.error(error);
+          setUploadProgress("", 0, false);
+          setSaveState("媒体上传失败，请重试", true);
+        });
+      });
+      els.previewGrid.addEventListener("click", event => {
+        const button = event.target.closest("[data-remove-media]");
+        if (!button) return;
+        removeMedia(Number(button.dataset.removeMedia)).catch(error => {
+          console.error(error);
+          setSaveState("媒体删除失败，请重试", true);
+        });
+      });
+      els.exportBtn.addEventListener("click", exportDiary);
+      els.importInput.addEventListener("change", event => importDiary(event.target.files[0]));
+      els.mobileTabs.forEach(tab => tab.addEventListener("click", () => showPanel(tab.dataset.tab)));
+    }
+
+    async function initDiary() {
+      db = await openDb();
+      adoptLoadedEntries(await getAllEntries());
+      if (!entries.length) {
+        entries = CLOUD_ENABLED
+          ? [createEntry({
+              title: "我的第一条云端日记",
+              body: "这条记录已经保存在云端，可以在其他设备登录后继续编辑。",
+              tags: ["云端", "开始"]
+            })]
+          : seedEntries();
+        for (const entry of entries) await putEntry(entry);
+      }
+      await restoreDraft();
+      entries = sortedEntries(entries);
+      currentId = entries[0]?.id || null;
+      if (!eventsBound) {
+        bindEvents();
+        eventsBound = true;
+      }
+      if (entries[0]) loadEditor(entries[0]);
+      renderAll();
+      diaryReady = true;
+    }
+
+    async function initAuth() {
+      if (CLOUD_ENABLED) await initCloudClient();
+      els.usernameInput.addEventListener("input", updateLoginMode);
+      els.loginForm.addEventListener("submit", event => {
+        handleLogin(event).catch(error => {
+          console.error(error);
+          els.loginMessage.textContent = "暂时无法验证密码，请刷新后重试。";
+        });
+      });
+      if (CLOUD_ENABLED) {
+        const { data, error } = await cloudClient.auth.getSession();
+        if (error) throw error;
+        if (data.session?.user) {
+          cloudUser = data.session.user;
+          await unlockDiary({
+            name: cloudUser.email || "云端用户",
+            userId: cloudUser.id
+          });
+        } else {
+          showLogin();
+        }
+        return;
+      }
+      const sessionAccount = accountFor(sessionStorage.getItem(SESSION_KEY) || "");
+      if (sessionAccount) {
+        unlockDiary(sessionAccount).catch(error => {
+          console.error(error);
+          showLogin();
+        });
+      } else {
+        showLogin();
+      }
+    }
+
+    window.addEventListener("pagehide", () => {
+      storeDraft();
+      clearObjectUrls();
+    });
+    window.addEventListener("beforeunload", () => clearObjectUrls());
+    window.addEventListener("load", () => {
+      initAuth().catch(error => {
+        console.error(error);
+        document.body.innerHTML = `<main style="padding:40px;font-family:system-ui">打开私人日记时遇到问题，请换一个现代浏览器再试。</main>`;
+      });
+    });
+  </script>
+</body>
+</html>
