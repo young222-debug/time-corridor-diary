@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Iwyo+I6zmTCJ3hnR/7bojVad2fhK+juTZ3upbop9Wb4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-lz0dyDymyKMMw8enkJDKLMo5VfKFl6j+4f+cTci4OmE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <script src="./config.js?v=cloud-20260619"></script>
   <style>
@@ -31,6 +31,10 @@
 
     * {
       box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
     }
 
     html,
@@ -861,6 +865,83 @@
       font-size: 12px;
     }
 
+    .data-overview {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .data-metric {
+      min-width: 0;
+      padding: 13px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 246, 0.72);
+    }
+
+    .data-metric strong,
+    .data-metric span {
+      display: block;
+    }
+
+    .data-metric strong {
+      overflow: hidden;
+      font-family: var(--font-serif);
+      font-size: 22px;
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .data-metric span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .backup-options {
+      display: grid;
+      gap: 10px;
+    }
+
+    .backup-option {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 16px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 246, 0.72);
+    }
+
+    .backup-option h3,
+    .backup-option p {
+      margin: 0;
+    }
+
+    .backup-option h3 {
+      font-size: 14px;
+    }
+
+    .backup-option p {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .data-note {
+      margin: 14px 0 0;
+      padding: 13px 14px;
+      border-left: 3px solid var(--sage);
+      background: rgba(104, 120, 102, 0.08);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
     .login-screen {
       position: fixed;
       inset: 0;
@@ -1091,7 +1172,12 @@
 
       .field-grid,
       .preview-grid,
-      .stats {
+      .stats,
+      .data-overview {
+        grid-template-columns: 1fr;
+      }
+
+      .backup-option {
         grid-template-columns: 1fr;
       }
 
@@ -1151,7 +1237,7 @@
           <span data-icon="save"></span><span id="loginButtonText">进入日记</span>
         </button>
         <p class="login-message" id="loginMessage" role="alert"></p>
-        <div class="login-note" id="loginNote">预设账号可直接登录；其他账号首次使用时会在当前浏览器创建。各账号的日记分别保存，请定期使用“导出”备份。</div>
+        <div class="login-note" id="loginNote">首次使用时会在当前浏览器创建本地账号。各账号的日记分别保存，请定期在“数据”中下载备份。</div>
       </form>
     </div>
   </section>
@@ -1199,9 +1285,7 @@
         <button class="ghost-button" id="recycleBtn"><span data-icon="trash"></span>回收站</button>
         <button class="ghost-button" id="accountBtn"><span data-icon="lock"></span>账号</button>
         <button class="ghost-button" id="migrateBtn" hidden><span data-icon="upload"></span>迁移本地</button>
-        <button class="ghost-button" id="exportBtn"><span data-icon="download"></span>导出</button>
-        <label class="ghost-button" for="importInput"><span data-icon="upload"></span>导入</label>
-        <input class="file-hidden" id="importInput" type="file" accept="application/json">
+        <button class="ghost-button" id="dataBtn"><span data-icon="save"></span>数据</button>
       </div>
     </aside>
 
@@ -1335,6 +1419,46 @@
     </form>
   </dialog>
 
+  <dialog id="dataDialog" aria-labelledby="dataTitle">
+    <div class="dialog-head">
+      <h2 id="dataTitle">数据与备份</h2>
+      <button class="text-button" type="button" data-close-dialog="dataDialog">关闭</button>
+    </div>
+    <div class="dialog-body">
+      <div class="data-overview" aria-label="数据概览">
+        <div class="data-metric"><strong id="dataEntryCount">0</strong><span>正常记录</span></div>
+        <div class="data-metric"><strong id="dataRecycleCount">0</strong><span>回收站</span></div>
+        <div class="data-metric"><strong id="dataMediaCount">0</strong><span>照片与视频</span></div>
+        <div class="data-metric"><strong id="dataStorageSize">0 KB</strong><span>媒体占用</span></div>
+      </div>
+      <div class="backup-options">
+        <div class="backup-option">
+          <div>
+            <h3>文字轻量备份</h3>
+            <p>包含正常记录与回收站，不下载照片和视频，速度更快。</p>
+          </div>
+          <button class="ghost-button" id="textBackupBtn" type="button"><span data-icon="download"></span>下载</button>
+        </div>
+        <div class="backup-option">
+          <div>
+            <h3>完整备份</h3>
+            <p>包含全部文字、照片和视频。文件大小约为 <span id="fullBackupEstimate">0 KB</span>。</p>
+          </div>
+          <button class="primary-button" id="fullBackupBtn" type="button"><span data-icon="download"></span>完整下载</button>
+        </div>
+        <div class="backup-option">
+          <div>
+            <h3>从备份恢复</h3>
+            <p>选择此前导出的 JSON 文件。云端模式只恢复文字，避免重复上传媒体。</p>
+          </div>
+          <label class="ghost-button" for="importInput"><span data-icon="upload"></span>选择文件</label>
+          <input class="file-hidden" id="importInput" type="file" accept="application/json">
+        </div>
+      </div>
+      <p class="data-note" id="backupStatus">云端会自动保存日记历史版本。回收站不会自动清空，只有你主动永久删除时才会移除内容。</p>
+    </div>
+  </dialog>
+
   <script>
     let DB_NAME = "time-corridor-diary";
     const STORE_NAME = "entries";
@@ -1394,13 +1518,22 @@
       accountBtn: document.querySelector("#accountBtn"),
       historyBtn: document.querySelector("#historyBtn"),
       migrateBtn: document.querySelector("#migrateBtn"),
-      exportBtn: document.querySelector("#exportBtn"),
+      dataBtn: document.querySelector("#dataBtn"),
       importInput: document.querySelector("#importInput"),
       recycleDialog: document.querySelector("#recycleDialog"),
       recycleList: document.querySelector("#recycleList"),
       historyDialog: document.querySelector("#historyDialog"),
       historyList: document.querySelector("#historyList"),
       accountDialog: document.querySelector("#accountDialog"),
+      dataDialog: document.querySelector("#dataDialog"),
+      dataEntryCount: document.querySelector("#dataEntryCount"),
+      dataRecycleCount: document.querySelector("#dataRecycleCount"),
+      dataMediaCount: document.querySelector("#dataMediaCount"),
+      dataStorageSize: document.querySelector("#dataStorageSize"),
+      fullBackupEstimate: document.querySelector("#fullBackupEstimate"),
+      textBackupBtn: document.querySelector("#textBackupBtn"),
+      fullBackupBtn: document.querySelector("#fullBackupBtn"),
+      backupStatus: document.querySelector("#backupStatus"),
       passwordForm: document.querySelector("#passwordForm"),
       currentPasswordInput: document.querySelector("#currentPasswordInput"),
       newPasswordInput: document.querySelector("#newPasswordInput"),
@@ -1540,7 +1673,7 @@
       els.usernameInput.inputMode = CLOUD_ENABLED ? "email" : "text";
       els.loginNote.textContent = CLOUD_ENABLED
         ? "账号由管理员在 Supabase 中创建或邀请。每位用户只能访问自己的云端日记。"
-        : "预设账号可直接登录；其他账号首次使用时会在当前浏览器创建。各账号的日记分别保存，请定期使用“导出”备份。";
+        : "首次使用时会在当前浏览器创建本地账号。各账号的日记分别保存，请定期在“数据”中下载备份。";
       els.usernameInput.value = "";
       els.passwordInput.value = "";
       els.confirmPasswordInput.value = "";
@@ -2558,24 +2691,81 @@
       };
     }
 
-    async function exportDiary() {
-      setSaveState("整理导出中", true);
-      const payload = {
-        app: "时间长廊",
-        exportedAt: new Date().toISOString(),
-        entries: await Promise.all(sortedEntries().map(async entry => ({
-          ...entry,
-          media: await Promise.all((entry.media || []).map(mediaItemToExport))
-        })))
-      };
+    function allDiaryEntries() {
+      return sortedEntries([...entries, ...recycledEntries]);
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) return "0 KB";
+      const units = ["B", "KB", "MB", "GB"];
+      const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+      const value = bytes / (1024 ** index);
+      return `${value >= 10 || index === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[index]}`;
+    }
+
+    function backupStorageKey() {
+      const account = currentAccount?.name?.toLowerCase() || "local";
+      return `time-corridor-last-backup-${account}`;
+    }
+
+    function downloadJson(payload, fileName) {
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `time-corridor-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = fileName;
       link.click();
       URL.revokeObjectURL(url);
-      setSaveState("已保存");
+    }
+
+    function renderDataOverview() {
+      const allEntries = allDiaryEntries();
+      const mediaItems = allEntries.flatMap(entry => entry.media || []);
+      const mediaBytes = mediaItems.reduce((sum, item) => sum + (Number(item.size) || 0), 0);
+      const textBytes = new Blob([JSON.stringify(allEntries.map(entry => ({ ...entry, media: [] })))]).size;
+      const estimatedFullBytes = textBytes + Math.ceil(mediaBytes * 1.37);
+      els.dataEntryCount.textContent = entries.length;
+      els.dataRecycleCount.textContent = recycledEntries.length;
+      els.dataMediaCount.textContent = mediaItems.length;
+      els.dataStorageSize.textContent = formatBytes(mediaBytes);
+      els.fullBackupEstimate.textContent = formatBytes(estimatedFullBytes);
+      const lastBackup = localStorage.getItem(backupStorageKey());
+      els.backupStatus.textContent = lastBackup
+        ? `上次下载备份：${formatLong(lastBackup)}。云端会自动保存历史版本；回收站不会自动清空。`
+        : "尚未在这台设备下载过备份。云端会自动保存历史版本；回收站不会自动清空。";
+    }
+
+    async function exportDiary(includeMedia = true) {
+      setSaveState(includeMedia ? "整理完整备份中" : "整理文字备份中", true);
+      els.textBackupBtn.disabled = true;
+      els.fullBackupBtn.disabled = true;
+      const exportedAt = new Date().toISOString();
+      const backupKind = includeMedia ? "complete" : "text";
+      const payload = {
+        app: "时间长廊",
+        version: 2,
+        backupKind,
+        exportedAt,
+        entries: await Promise.all(allDiaryEntries().map(async entry => ({
+          ...entry,
+          media: includeMedia
+            ? await Promise.all((entry.media || []).map(mediaItemToExport))
+            : (entry.media || []).map(item => ({
+                id: item.id,
+                name: item.name,
+                type: item.type,
+                size: item.size,
+                omitted: true
+              }))
+        })))
+      };
+      const suffix = includeMedia ? "complete" : "text";
+      downloadJson(payload, `time-corridor-${suffix}-${exportedAt.slice(0, 10)}.json`);
+      localStorage.setItem(backupStorageKey(), exportedAt);
+      els.textBackupBtn.disabled = false;
+      els.fullBackupBtn.disabled = false;
+      renderDataOverview();
+      setSaveState("备份已下载");
     }
 
     async function importDiary(file) {
@@ -2585,18 +2775,23 @@
       const incoming = await Promise.all((payload.entries || []).map(async entry => ({
         ...entry,
         id: entry.id || crypto.randomUUID(),
-        media: CLOUD_ENABLED ? [] : (entry.media || []).map(item => ({
-          id: item.id || crypto.randomUUID(),
-          name: item.name,
-          type: item.type,
-          size: item.size,
-          blob: dataUrlToBlob(item.dataUrl)
-        }))
+        media: CLOUD_ENABLED ? [] : (entry.media || [])
+          .filter(item => item.dataUrl)
+          .map(item => ({
+            id: item.id || crypto.randomUUID(),
+            name: item.name,
+            type: item.type,
+            size: item.size,
+            blob: dataUrlToBlob(item.dataUrl)
+          }))
       })));
       for (const entry of incoming) await putEntry(entry);
       adoptLoadedEntries(await getAllEntries());
       if (entries[0]) loadEditor(entries[0]);
       renderAll();
+      els.importInput.value = "";
+      renderDataOverview();
+      setSaveState(`已恢复 ${incoming.length} 条文字记录`);
     }
 
     function readEntriesFromDatabase(databaseName) {
@@ -2748,8 +2943,33 @@
           setSaveState("媒体删除失败，请重试", true);
         });
       });
-      els.exportBtn.addEventListener("click", exportDiary);
-      els.importInput.addEventListener("change", event => importDiary(event.target.files[0]));
+      els.dataBtn.addEventListener("click", () => {
+        renderDataOverview();
+        els.dataDialog.showModal();
+      });
+      els.textBackupBtn.addEventListener("click", () => {
+        exportDiary(false).catch(error => {
+          console.error(error);
+          els.textBackupBtn.disabled = false;
+          els.fullBackupBtn.disabled = false;
+          setSaveState("文字备份失败，请重试", true);
+        });
+      });
+      els.fullBackupBtn.addEventListener("click", () => {
+        exportDiary(true).catch(error => {
+          console.error(error);
+          els.textBackupBtn.disabled = false;
+          els.fullBackupBtn.disabled = false;
+          setSaveState("完整备份失败，请重试", true);
+        });
+      });
+      els.importInput.addEventListener("change", event => {
+        importDiary(event.target.files[0]).catch(error => {
+          console.error(error);
+          els.importInput.value = "";
+          setSaveState("恢复失败，请检查备份文件", true);
+        });
+      });
       els.mobileTabs.forEach(tab => tab.addEventListener("click", () => showPanel(tab.dataset.tab)));
     }
 
