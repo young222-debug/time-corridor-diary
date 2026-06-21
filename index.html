@@ -2,11 +2,18 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bjY7p1oOa30duobxXUP6rNTtNI1VgEIqGB2KlCpUWuA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta name="theme-color" content="#f6f1e8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="时间长廊">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-K26gmNeP/Zp20fNbW62EOc/QYnDI8kl2XwbYnzAQSA0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" href="./assets/favicon.png">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
   <script src="./config.js?v=cloud-20260619"></script>
   <style>
     :root {
@@ -52,6 +59,7 @@
         repeating-linear-gradient(90deg, rgba(49, 74, 91, 0.035) 0, rgba(49, 74, 91, 0.035) 1px, transparent 1px, transparent 72px),
         var(--paper);
       overflow: hidden;
+      overscroll-behavior: none;
     }
 
     button,
@@ -1074,42 +1082,50 @@
     @media (max-width: 1120px) {
       body {
         overflow: auto;
+        overscroll-behavior-y: contain;
       }
 
       .app {
         display: block;
         height: auto;
         min-height: 100vh;
+        min-height: 100dvh;
+        padding-bottom: calc(56px + env(safe-area-inset-bottom));
       }
 
       .mobile-tabs {
-        position: sticky;
-        top: 0;
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
         z-index: 10;
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        border-bottom: 1px solid var(--line);
+        padding-bottom: env(safe-area-inset-bottom);
+        border-top: 1px solid var(--line);
         background: rgba(246, 241, 232, 0.92);
         backdrop-filter: blur(16px);
       }
 
       .mobile-tabs button {
-        min-height: 46px;
+        min-height: 56px;
         border-radius: 0;
         background: transparent;
         color: var(--muted);
+        font-size: 12px;
       }
 
       .mobile-tabs button.active {
         color: var(--ink);
-        box-shadow: inset 0 -2px #1f2b29;
+        box-shadow: inset 0 2px #1f2b29;
       }
 
       .rail,
       .gallery,
       .editor {
         display: none;
-        min-height: calc(100vh - 46px);
+        min-height: calc(100vh - 56px - env(safe-area-inset-bottom));
+        min-height: calc(100dvh - 56px - env(safe-area-inset-bottom));
       }
 
       .rail.active,
@@ -1123,8 +1139,21 @@
         border: 0;
       }
 
+      .rail {
+        padding-top: calc(24px + env(safe-area-inset-top));
+      }
+
       .gallery {
-        padding: 24px 18px;
+        padding: calc(24px + env(safe-area-inset-top)) 18px 24px;
+      }
+
+      .editor-top {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        padding-top: calc(16px + env(safe-area-inset-top));
+        background: rgba(255, 250, 240, 0.94);
+        backdrop-filter: blur(16px);
       }
 
       .timeline::before {
@@ -1152,8 +1181,8 @@
       }
 
       .login-intro {
-        min-height: 300px;
-        padding: 34px 24px;
+        min-height: 270px;
+        padding: calc(30px + env(safe-area-inset-top)) 24px 30px;
         border-right: 0;
         border-bottom: 1px solid var(--line);
       }
@@ -1163,7 +1192,7 @@
       }
 
       .login-panel {
-        padding: 22px;
+        padding: 22px 18px calc(22px + env(safe-area-inset-bottom));
       }
 
       .login-form {
@@ -1171,10 +1200,13 @@
       }
 
       .field-grid,
-      .preview-grid,
       .stats,
       .data-overview {
         grid-template-columns: 1fr;
+      }
+
+      .preview-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .backup-option {
@@ -1202,8 +1234,57 @@
       }
 
       .editor-top {
-        align-items: flex-start;
-        flex-direction: column;
+        align-items: center;
+        flex-direction: row;
+        gap: 8px;
+        padding-right: 14px;
+        padding-left: 14px;
+      }
+
+      .editor-top .upload-actions {
+        margin-left: auto;
+        flex-wrap: nowrap;
+        gap: 4px;
+      }
+
+      .editor-top .text-button {
+        width: 36px;
+        min-width: 36px;
+        padding: 0;
+        font-size: 0;
+      }
+
+      .editor-top .primary-button {
+        min-width: 70px;
+      }
+
+      .editor-form {
+        padding: 20px 16px 32px;
+      }
+
+      .field textarea {
+        min-height: 42vh;
+      }
+
+      .bottom-tools {
+        flex-wrap: wrap;
+      }
+
+      .bottom-tools .ghost-button {
+        flex: 1 1 calc(50% - 4px);
+      }
+
+      dialog {
+        width: calc(100% - 24px);
+        max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      }
+
+      .dialog-head {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding-top: calc(18px + env(safe-area-inset-top));
+        background: var(--surface-solid);
       }
     }
   </style>
@@ -1304,8 +1385,8 @@
           <span id="saveState">已保存</span>
         </div>
         <div class="upload-actions">
-          <button class="text-button" id="historyBtn"><span data-icon="save"></span>历史</button>
-          <button class="text-button danger" id="deleteBtn"><span data-icon="trash"></span>删除</button>
+          <button class="text-button" id="historyBtn" title="历史版本" aria-label="历史版本"><span data-icon="save"></span>历史</button>
+          <button class="text-button danger" id="deleteBtn" title="删除记录" aria-label="删除记录"><span data-icon="trash"></span>删除</button>
           <button class="primary-button" id="saveBtn"><span data-icon="save"></span>保存</button>
         </div>
       </div>
@@ -1556,6 +1637,31 @@
     let cloudUser = null;
     let tusLibraryPromise = null;
     const objectUrls = new Set();
+
+    function isConnectionError(error) {
+      return !navigator.onLine || /failed to fetch|network|load failed/i.test(String(error?.message || error || ""));
+    }
+
+    function updateNetworkState() {
+      if (!CLOUD_ENABLED || !diaryReady) return;
+      if (!navigator.onLine) {
+        setSaveState("离线，草稿已保存在本机", true);
+        return;
+      }
+      const key = draftKey();
+      if (key && localStorage.getItem(key)) {
+        setSaveState("网络已恢复，正在同步", true);
+        saveCurrent().catch(error => {
+          console.error(error);
+          setSaveState("同步失败，草稿仍在本机", true);
+        });
+      }
+    }
+
+    async function registerServiceWorker() {
+      if (!("serviceWorker" in navigator) || !window.isSecureContext) return;
+      await navigator.serviceWorker.register("./sw.js");
+    }
 
     function loadSupabaseLibrary() {
       if (window.supabase?.createClient) return Promise.resolve();
@@ -2196,8 +2302,24 @@
       const entry = collectEditor();
       if (!entry) return;
       if (!silent) setSaveState("保存中", true);
-      await putEntry(entry);
       entries = entries.map(item => item.id === entry.id ? entry : item);
+      if (CLOUD_ENABLED && !navigator.onLine) {
+        storeDraft();
+        setSaveState("离线，草稿已保存在本机", true);
+        renderAll();
+        return;
+      }
+      try {
+        await putEntry(entry);
+      } catch (error) {
+        if (CLOUD_ENABLED && isConnectionError(error)) {
+          storeDraft();
+          setSaveState("连接中断，草稿已保存在本机", true);
+          renderAll();
+          return;
+        }
+        throw error;
+      }
       const key = draftKey();
       if (key) localStorage.removeItem(key);
       setSaveState("已自动保存");
@@ -2996,6 +3118,7 @@
       if (entries[0]) loadEditor(entries[0]);
       renderAll();
       diaryReady = true;
+      updateNetworkState();
     }
 
     async function initAuth() {
@@ -3008,6 +3131,11 @@
         });
       });
       if (CLOUD_ENABLED) {
+        if (!navigator.onLine) {
+          showLogin();
+          els.loginMessage.textContent = "当前处于离线状态。联网后即可登录，编辑中的草稿会保留在本机。";
+          return;
+        }
         const { data, error } = await cloudClient.auth.getSession();
         if (error) throw error;
         if (data.session?.user) {
@@ -3037,7 +3165,10 @@
       clearObjectUrls();
     });
     window.addEventListener("beforeunload", () => clearObjectUrls());
+    window.addEventListener("online", updateNetworkState);
+    window.addEventListener("offline", updateNetworkState);
     window.addEventListener("load", () => {
+      registerServiceWorker().catch(error => console.warn("Service worker unavailable", error));
       initAuth().catch(error => {
         console.error(error);
         document.body.innerHTML = `<main style="padding:40px;font-family:system-ui">打开私人日记时遇到问题，请换一个现代浏览器再试。</main>`;
