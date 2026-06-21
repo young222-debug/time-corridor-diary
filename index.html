@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="时间长廊">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ewEzOnaQIoTkyNR2P71yQfcvWBLpkphaRoG5zt4ptOM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-90KnV1tv7hOgN+IbpCxa5haIUrYBcEVKM/nmfOtcvj4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" href="./assets/favicon.png">
@@ -366,10 +366,13 @@
 
     .file-hidden {
       position: absolute;
-      width: 1px;
-      height: 1px;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      border: 0 !important;
       overflow: hidden;
       clip: rect(0, 0, 0, 0);
+      clip-path: inset(50%);
       white-space: nowrap;
     }
 
@@ -629,6 +632,28 @@
       box-shadow: 0 0 0 4px rgba(104, 120, 102, 0.13);
     }
 
+    .save-state[data-state="local"] .save-dot {
+      background: var(--gold);
+      box-shadow: 0 0 0 4px rgba(176, 139, 79, 0.14);
+    }
+
+    .save-state[data-state="syncing"] .save-dot {
+      background: var(--blue);
+      box-shadow: 0 0 0 4px rgba(49, 74, 91, 0.14);
+      animation: sync-pulse 1.4s ease-in-out infinite;
+    }
+
+    .save-state[data-state="error"] .save-dot {
+      background: var(--wine);
+      box-shadow: 0 0 0 4px rgba(132, 78, 87, 0.14);
+    }
+
+    @keyframes sync-pulse {
+      50% {
+        opacity: 0.45;
+      }
+    }
+
     .primary-button {
       padding: 0 14px;
       background: #1f2b29;
@@ -711,6 +736,12 @@
 
     .upload-progress.active {
       display: grid;
+    }
+
+    .upload-progress .retry-button {
+      grid-column: 1 / -1;
+      justify-self: start;
+      margin-top: 3px;
     }
 
     .upload-progress strong {
@@ -1513,7 +1544,7 @@
 
     <section class="editor" data-panel="editor">
       <div class="editor-top">
-        <div class="save-state">
+        <div class="save-state" data-state="synced">
           <span class="save-dot" aria-hidden="true"></span>
           <span id="saveState">已保存</span>
         </div>
@@ -1580,6 +1611,7 @@
               <strong id="uploadProgressName">准备上传</strong>
               <span id="uploadProgressValue">0%</span>
               <div class="upload-track"><span id="uploadProgressBar"></span></div>
+              <button class="text-button retry-button" id="retryUploadBtn" type="button" hidden>重试未完成上传</button>
             </div>
             <div class="preview-grid" id="previewGrid"></div>
           </div>
@@ -1742,6 +1774,7 @@
       uploadProgressName: document.querySelector("#uploadProgressName"),
       uploadProgressValue: document.querySelector("#uploadProgressValue"),
       uploadProgressBar: document.querySelector("#uploadProgressBar"),
+      retryUploadBtn: document.querySelector("#retryUploadBtn"),
       previewGrid: document.querySelector("#previewGrid"),
       saveBtn: document.querySelector("#saveBtn"),
       deleteBtn: document.querySelector("#deleteBtn"),
@@ -1806,6 +1839,9 @@
     let blobUrlCache = new WeakMap();
     let videoCoverObserver = null;
     let mediaHydrationScheduled = false;
+    let mediaRetryTimer = null;
+    let mediaRetryInProgress = false;
+    const pendingMediaUploads = [];
     const objectUrls = new Set();
     const videoPosterCache = new Map();
 
@@ -1816,17 +1852,20 @@
     function updateNetworkState() {
       if (!CLOUD_ENABLED || !diaryReady) return;
       if (!navigator.onLine) {
-        setSaveState("离线，草稿已保存在本机", true);
+        setSaveState("离线，仅保存于本机", "local");
         return;
       }
       const key = draftKey();
       if (key && localStorage.getItem(key)) {
-        setSaveState("网络已恢复，正在同步", true);
-        saveCurrent().catch(error => {
-          console.error(error);
-          setSaveState("同步失败，草稿仍在本机", true);
-        });
+        setSaveState("网络已恢复，正在同步", "syncing");
+        syncStoredDraft()
+          .then(() => setSettledState("已同步"))
+          .catch(error => {
+            console.error(error);
+            setSaveState("同步失败，草稿仍在本机", "error");
+          });
       }
+      if (pendingMediaUploads.length) scheduleMediaRetry(300);
     }
 
     async function registerServiceWorker() {
@@ -1956,7 +1995,8 @@
 
     async function checkAutoLock() {
       if (!currentAccount || lockInProgress) return;
-      const mediaBusy = els.uploadProgress.classList.contains("active");
+      const mediaBusy = mediaRetryInProgress ||
+        els.mediaInput.disabled;
       const backupBusy = els.fullBackupBtn.disabled || els.textBackupBtn.disabled;
       const videoPlaying = Array.from(document.querySelectorAll("video"))
         .some(video => !video.paused && !video.ended);
@@ -2104,7 +2144,12 @@
       lockInProgress = true;
       storeDraft();
       clearTimeout(saveTimer);
+      clearTimeout(mediaRetryTimer);
       pendingSaveEntry = null;
+      pendingMediaUploads.length = 0;
+      mediaRetryInProgress = false;
+      els.retryUploadBtn.hidden = true;
+      setUploadProgress("", 0, false);
       stopAutoLock();
       videoCoverObserver?.disconnect();
       videoPosterCache.clear();
@@ -2488,9 +2533,20 @@
       renderMediaViewer();
     }
 
-    function setSaveState(text, busy = false) {
+    function setSaveState(text, state = "synced") {
       els.saveState.textContent = text;
-      document.querySelector(".save-dot").style.background = busy ? "var(--gold)" : "var(--sage)";
+      els.saveState.title = text;
+      document.querySelector(".save-state").dataset.state = typeof state === "string"
+        ? state
+        : state ? "syncing" : "synced";
+    }
+
+    function setSettledState(text = CLOUD_ENABLED ? "已同步" : "已保存") {
+      if (pendingMediaUploads.length) {
+        setSaveState(`${pendingMediaUploads.length} 份媒体等待重试`, "error");
+      } else {
+        setSaveState(text, "synced");
+      }
     }
 
     function renderChips() {
@@ -2613,7 +2669,7 @@
       els.tagsInput.value = (entry.tags || []).join(", ");
       els.bodyInput.value = entry.body || "";
       renderAll();
-      setSaveState("已保存");
+      setSettledState();
     }
 
     function collectEditor() {
@@ -2642,6 +2698,26 @@
       storeDraftEntry(collectEditor());
     }
 
+    async function syncStoredDraft() {
+      const key = draftKey();
+      if (!key) return;
+      let draft;
+      try {
+        draft = JSON.parse(localStorage.getItem(key));
+      } catch {
+        localStorage.removeItem(key);
+        return;
+      }
+      if (!draft?.id) return;
+      const existing = entries.find(entry => entry.id === draft.id);
+      if (!existing) {
+        localStorage.removeItem(key);
+        return;
+      }
+      const restored = { ...existing, ...draft, media: existing.media || [] };
+      await persistEntry(restored, { silent: true });
+    }
+
     async function restoreDraft() {
       const key = draftKey();
       if (!key) return;
@@ -2666,12 +2742,14 @@
 
     async function persistEntry(entry, { silent = false } = {}) {
       if (!entry) return;
-      if (!silent && entry.id === currentId) setSaveState("保存中", true);
+      if (entry.id === currentId && navigator.onLine) {
+        setSaveState(silent ? "正在同步" : "保存中", "syncing");
+      }
       entries = entries.map(item => item.id === entry.id ? entry : item);
       diaryViewsDirty = true;
       if (CLOUD_ENABLED && !navigator.onLine) {
         storeDraftEntry(entry);
-        if (entry.id === currentId) setSaveState("离线，草稿已保存在本机", true);
+        if (entry.id === currentId) setSaveState("离线，仅保存于本机", "local");
         return;
       }
       try {
@@ -2679,7 +2757,7 @@
       } catch (error) {
         if (CLOUD_ENABLED && isConnectionError(error)) {
           storeDraftEntry(entry);
-          if (entry.id === currentId) setSaveState("连接中断，草稿已保存在本机", true);
+          if (entry.id === currentId) setSaveState("同步失败，草稿仍在本机", "error");
           return;
         }
         throw error;
@@ -2693,7 +2771,7 @@
           localStorage.removeItem(key);
         }
       }
-      if (entry.id === currentId) setSaveState("已自动保存");
+      if (entry.id === currentId) setSettledState();
     }
 
     async function saveCurrent(options = {}) {
@@ -2705,7 +2783,7 @@
     function scheduleSave() {
       const entry = collectEditor();
       if (!entry) return;
-      setSaveState("编辑中", true);
+      setSaveState("编辑中，仅保存于本机", "local");
       entries = entries.map(item => item.id === entry.id ? entry : item);
       diaryViewsDirty = true;
       storeDraftEntry(entry);
@@ -2715,7 +2793,7 @@
         if (pendingSaveEntry?.id === entry.id) pendingSaveEntry = null;
         persistEntry(entry, { silent: true }).catch(error => {
           console.error(error);
-          if (entry.id === currentId) setSaveState("自动保存失败，草稿仍在本机", true);
+          if (entry.id === currentId) setSaveState("同步失败，草稿仍在本机", "error");
         });
       }, 1400);
     }
@@ -2818,6 +2896,7 @@
       const ok = confirm(`永久删除「${entry.title || "未命名的一天"}」吗？文字、照片和视频都无法恢复。`);
       if (!ok) return;
       if (CLOUD_ENABLED) await deleteCloudMedia(entry.media);
+      discardPendingUploadsForEntry(id);
       await removeEntry(id);
       recycledEntries = recycledEntries.filter(item => item.id !== id);
       renderRecycleBin();
@@ -3001,6 +3080,50 @@
       );
     }
 
+    function wait(milliseconds) {
+      return new Promise(resolve => window.setTimeout(resolve, milliseconds));
+    }
+
+    function retryableUploadError(error) {
+      const status = Number(error?.statusCode || error?.status || 0);
+      return status >= 500 || status === 408 || status === 429 || isConnectionError(error) ||
+        /timeout|temporar|gateway|rate|fetch|network|connection|5\d\d/i.test(String(error?.message || error || ""));
+    }
+
+    function updatePendingUploadUi() {
+      const count = pendingMediaUploads.length;
+      els.retryUploadBtn.hidden = !count;
+      if (count && !mediaRetryInProgress) {
+        setUploadProgress(`${count} 份媒体等待重试`, 0, true);
+        els.uploadProgressValue.textContent = "待同步";
+      } else if (!count && !els.mediaInput.disabled) {
+        hideUploadProgress();
+      }
+    }
+
+    function queueMediaUpload(task, error) {
+      if (!pendingMediaUploads.some(item => item.mediaId === task.mediaId)) {
+        pendingMediaUploads.push({ ...task, retryCount: 0, lastError: error?.message || "上传失败" });
+      }
+      updatePendingUploadUi();
+      setSaveState(`${pendingMediaUploads.length} 份媒体仅保存在本页，等待重试`, "error");
+    }
+
+    function discardPendingUploadsForEntry(entryId) {
+      for (let index = pendingMediaUploads.length - 1; index >= 0; index--) {
+        if (pendingMediaUploads[index].entryId === entryId) pendingMediaUploads.splice(index, 1);
+      }
+      updatePendingUploadUi();
+    }
+
+    function scheduleMediaRetry(delay = 2500) {
+      clearTimeout(mediaRetryTimer);
+      if (!pendingMediaUploads.length || !navigator.onLine || mediaRetryInProgress) return;
+      mediaRetryTimer = window.setTimeout(() => {
+        retryPendingMediaUploads().catch(error => console.error(error));
+      }, delay);
+    }
+
     async function uploadVideoResumable(file, storagePath, onProgress) {
       await loadTusLibrary();
       const { data: { session }, error: sessionError } = await cloudClient.auth.getSession();
@@ -3047,16 +3170,119 @@
         await uploadVideoResumable(file, storagePath, onProgress);
         return;
       }
-      onProgress(12);
-      const { error } = await cloudClient.storage
+      const retryDelays = [0, 1200, 3200];
+      let lastError;
+      for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+        if (retryDelays[attempt]) await wait(retryDelays[attempt]);
+        onProgress(12 + attempt * 8);
+        const { error } = await cloudClient.storage
+          .from(MEDIA_BUCKET)
+          .upload(storagePath, file, {
+            cacheControl: "3600",
+            contentType: file.type,
+            upsert: false
+          });
+        if (!error || /already exists|duplicate|409/i.test(String(error.message || error))) {
+          onProgress(100);
+          return;
+        }
+        lastError = error;
+        if (!retryableUploadError(error)) break;
+      }
+      throw lastError || new Error("上传失败");
+    }
+
+    async function uploadMediaTask(task, onProgress) {
+      await uploadCloudFile(task.file, task.storagePath, onProgress);
+      const mediaRow = {
+        id: task.mediaId,
+        user_id: cloudUser.id,
+        entry_id: task.entryId,
+        storage_path: task.storagePath,
+        file_name: task.file.name,
+        mime_type: task.file.type,
+        file_size: task.file.size
+      };
+      let { data: inserted, error: insertError } = await cloudClient
+        .from("media")
+        .insert(mediaRow)
+        .select("id, entry_id, storage_path, file_name, mime_type, file_size, created_at")
+        .single();
+      if (insertError && /duplicate|already exists|23505/i.test(String(insertError.message || insertError.code || insertError))) {
+        const existing = await cloudClient
+          .from("media")
+          .select("id, entry_id, storage_path, file_name, mime_type, file_size, created_at")
+          .eq("id", task.mediaId)
+          .eq("user_id", cloudUser.id)
+          .single();
+        inserted = existing.data;
+        insertError = existing.error;
+      }
+      if (insertError || !inserted) throw insertError || new Error("无法保存媒体记录");
+      const { data: signedData, error: signedError } = await cloudClient.storage
         .from(MEDIA_BUCKET)
-        .upload(storagePath, file, {
-          cacheControl: "3600",
-          contentType: file.type,
-          upsert: false
-        });
-      if (error) throw error;
-      onProgress(100);
+        .createSignedUrl(task.storagePath, 3600);
+      if (signedError) throw signedError;
+      return {
+        id: inserted.id,
+        entryId: inserted.entry_id,
+        path: inserted.storage_path,
+        name: inserted.file_name,
+        type: inserted.mime_type,
+        size: inserted.file_size,
+        createdAt: inserted.created_at,
+        url: signedData.signedUrl
+      };
+    }
+
+    function attachUploadedMedia(entryId, mediaItem) {
+      const entry = entries.find(item => item.id === entryId);
+      if (!entry || (entry.media || []).some(item => item.id === mediaItem.id)) return;
+      entry.media = [...(entry.media || []), mediaItem];
+      entries = entries.map(item => item.id === entry.id ? entry : item);
+      diaryViewsDirty = true;
+      if (entry.id === currentId) renderPreview();
+      renderStats();
+    }
+
+    async function retryPendingMediaUploads() {
+      if (!CLOUD_ENABLED || !navigator.onLine || mediaRetryInProgress || !pendingMediaUploads.length) return;
+      mediaRetryInProgress = true;
+      clearTimeout(mediaRetryTimer);
+      let completed = 0;
+      const tasks = [...pendingMediaUploads];
+      for (const task of tasks) {
+        setSaveState(`正在重试媒体 ${completed + 1}/${tasks.length}`, "syncing");
+        setUploadProgress(`${task.file.name} · ${formatBytes(task.file.size)}`, 0, true);
+        try {
+          const mediaItem = await uploadMediaTask(task, percentage => {
+            setUploadProgress(`${task.file.name} · ${formatBytes(task.file.size)}`, percentage, true);
+          });
+          attachUploadedMedia(task.entryId, mediaItem);
+          const index = pendingMediaUploads.findIndex(item => item.mediaId === task.mediaId);
+          if (index >= 0) pendingMediaUploads.splice(index, 1);
+          completed++;
+        } catch (error) {
+          console.error(error);
+          task.lastError = error?.message || "上传失败";
+          task.retryCount = (task.retryCount || 0) + 1;
+          if (!navigator.onLine) break;
+        }
+      }
+      mediaRetryInProgress = false;
+      if (pendingMediaUploads.length) {
+        updatePendingUploadUi();
+        setSaveState(`${pendingMediaUploads.length} 份媒体等待重试`, "error");
+        const automaticTask = pendingMediaUploads.find(task => (task.retryCount || 0) < 3);
+        if (automaticTask) {
+          const delay = 15000 * (2 ** Math.max(0, automaticTask.retryCount - 1));
+          scheduleMediaRetry(delay);
+        }
+      } else {
+        els.retryUploadBtn.hidden = true;
+        hideUploadProgress();
+        setSettledState(completed ? "媒体已全部同步" : "已同步");
+      }
     }
 
     async function addMedia(files) {
@@ -3078,17 +3304,19 @@
           setSaveState("已取消上传");
           return;
         }
+        els.mediaInput.disabled = true;
         const additions = [];
         const failures = [];
         for (let index = 0; index < selected.length; index++) {
           const file = selected[index];
           const video = isVideoFile(file);
-          setSaveState(`上传${video ? "视频" : "照片"} ${index + 1}/${selected.length}`, true);
+          setSaveState(`上传${video ? "视频" : "照片"} ${index + 1}/${selected.length}`, "syncing");
           setUploadProgress(`${file.name} · ${formatBytes(file.size)}`, 0);
+          let task;
           try {
             const uploadFile = video ? file : await compressImage(file);
             if (!video && uploadFile.size < file.size) {
-              setSaveState(`照片已压缩 ${formatBytes(file.size)} → ${formatBytes(uploadFile.size)}`, true);
+              setSaveState(`照片已压缩 ${formatBytes(file.size)} → ${formatBytes(uploadFile.size)}`, "syncing");
               setUploadProgress(`${uploadFile.name} · ${formatBytes(uploadFile.size)}`, 0);
             }
             const maxSize = video ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
@@ -3098,55 +3326,39 @@
             const mediaId = crypto.randomUUID();
             const extension = safeExtension(uploadFile, video ? "mp4" : "jpg");
             const storagePath = `${cloudUser.id}/${entry.id}/${mediaId}.${extension}`;
-            await uploadCloudFile(uploadFile, storagePath, percentage => {
+            task = { mediaId, entryId: entry.id, file: uploadFile, storagePath };
+            const mediaItem = await uploadMediaTask(task, percentage => {
               setUploadProgress(`${uploadFile.name} · ${formatBytes(uploadFile.size)}`, percentage);
-              setSaveState(`上传${video ? "视频" : "照片"} ${Math.round(percentage)}%`, true);
+              setSaveState(`上传${video ? "视频" : "照片"} ${Math.round(percentage)}%`, "syncing");
             });
-
-            const mediaRow = {
-              id: mediaId,
-              user_id: cloudUser.id,
-              entry_id: entry.id,
-              storage_path: storagePath,
-              file_name: uploadFile.name,
-              mime_type: uploadFile.type,
-              file_size: uploadFile.size
-            };
-            const { data: inserted, error: insertError } = await cloudClient
-              .from("media")
-              .insert(mediaRow)
-              .select("id, entry_id, storage_path, file_name, mime_type, file_size, created_at")
-              .single();
-            if (insertError) {
-              await cloudClient.storage.from(MEDIA_BUCKET).remove([storagePath]);
-              throw insertError;
-            }
-            const { data: signedData, error: signedError } = await cloudClient.storage
-              .from(MEDIA_BUCKET)
-              .createSignedUrl(storagePath, 3600);
-            if (signedError) throw signedError;
-            additions.push({
-              id: inserted.id,
-              entryId: inserted.entry_id,
-              path: inserted.storage_path,
-              name: inserted.file_name,
-              type: inserted.mime_type,
-              size: inserted.file_size,
-              createdAt: inserted.created_at,
-              url: signedData.signedUrl
-            });
+            additions.push(mediaItem);
           } catch (error) {
             console.error(error);
-            failures.push(`${file.name}：${error.message || "上传失败"}`);
+            if (task && (retryableUploadError(error) || !navigator.onLine)) {
+              queueMediaUpload(task, error);
+              failures.push(`${file.name}：已保留，等待自动重试`);
+            } else {
+              failures.push(`${file.name}：${error.message || "上传失败"}`);
+            }
           }
         }
         entry.media = [...(entry.media || []), ...additions];
         entries = entries.map(item => item.id === entry.id ? entry : item);
         els.mediaInput.value = "";
-        hideUploadProgress();
-        setSaveState(failures.length ? `已上传 ${additions.length} 份，${failures.length} 份失败` : "媒体已同步");
+        els.mediaInput.disabled = false;
+        if (!pendingMediaUploads.length) hideUploadProgress();
+        setSaveState(
+          pendingMediaUploads.length
+            ? `${pendingMediaUploads.length} 份媒体等待重试`
+            : failures.length ? `已上传 ${additions.length} 份，${failures.length} 份失败` : "媒体已同步",
+          pendingMediaUploads.length || failures.length ? "error" : "synced"
+        );
         renderAll();
-        if (failures.length) alert(`以下媒体上传失败：\n${failures.join("\n")}`);
+        updatePendingUploadUi();
+        if (pendingMediaUploads.length) scheduleMediaRetry();
+        if (failures.length && !pendingMediaUploads.length) {
+          alert(`以下媒体上传失败：\n${failures.join("\n")}`);
+        }
         return;
       }
       if (!approveMediaSelection(files)) {
@@ -3492,8 +3704,19 @@
       els.mediaInput.addEventListener("change", event => {
         addMedia(event.target.files).catch(error => {
           console.error(error);
+          els.mediaInput.disabled = false;
           setUploadProgress("", 0, false);
-          setSaveState("媒体上传失败，请重试", true);
+          setSaveState("媒体上传失败，请重试", "error");
+        });
+      });
+      els.retryUploadBtn.addEventListener("click", () => {
+        if (!navigator.onLine) {
+          setSaveState("当前离线，联网后会自动重试", "local");
+          return;
+        }
+        retryPendingMediaUploads().catch(error => {
+          console.error(error);
+          setSaveState("媒体重试失败，将稍后继续", "error");
         });
       });
       els.previewGrid.addEventListener("click", event => {
