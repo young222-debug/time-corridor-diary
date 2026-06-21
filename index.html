@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="时间长廊">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-adiHo8NBHZ+FiDDJ9hNYqPMRxwYyjWVPEySENa3bhqU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ZFOqDDAA21MVnlfZKPaNDN5UsLlM5fOhaWfD3gw+AVU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" href="./assets/favicon.png">
@@ -2051,7 +2051,6 @@
       pendingSaveEntry = null;
       videoCoverObserver?.disconnect();
       videoPosterCache.clear();
-      clearObjectUrls();
       if (CLOUD_ENABLED) {
         await cloudClient.auth.signOut();
         cloudUser = null;
