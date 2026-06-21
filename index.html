@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="时间长廊">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Y27kT5xxu42kFBn/fE5a07ydxt8v3o9I1NHjM3Jbx2M='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-adiHo8NBHZ+FiDDJ9hNYqPMRxwYyjWVPEySENa3bhqU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" href="./assets/favicon.png">
@@ -1412,6 +1412,13 @@
         padding-top: calc(18px + env(safe-area-inset-top));
         background: var(--surface-solid);
       }
+
+      .rail,
+      .editor,
+      .mobile-tabs,
+      .editor-top {
+        backdrop-filter: none;
+      }
     }
   </style>
 </head>
@@ -1778,6 +1785,8 @@
     let currentId = null;
     let activeType = "全部";
     let saveTimer = null;
+    let searchTimer = null;
+    let pendingSaveEntry = null;
     let diaryReady = false;
     let eventsBound = false;
     let currentAccount = null;
@@ -1786,7 +1795,12 @@
     let tusLibraryPromise = null;
     let mediaViewerState = { entryId: null, index: 0 };
     let mediaSwipeStartX = null;
+    let diaryViewsDirty = false;
+    let blobUrlCache = new WeakMap();
+    let videoCoverObserver = null;
+    let mediaHydrationScheduled = false;
     const objectUrls = new Set();
+    const videoPosterCache = new Map();
 
     function isConnectionError(error) {
       return !navigator.onLine || /failed to fetch|network|load failed/i.test(String(error?.message || error || ""));
@@ -2033,6 +2047,11 @@
 
     async function lockDiary() {
       storeDraft();
+      clearTimeout(saveTimer);
+      pendingSaveEntry = null;
+      videoCoverObserver?.disconnect();
+      videoPosterCache.clear();
+      clearObjectUrls();
       if (CLOUD_ENABLED) {
         await cloudClient.auth.signOut();
         cloudUser = null;
@@ -2284,11 +2303,15 @@
     function clearObjectUrls() {
       for (const url of objectUrls) URL.revokeObjectURL(url);
       objectUrls.clear();
+      blobUrlCache = new WeakMap();
     }
 
     function mediaUrl(blob) {
+      const cached = blobUrlCache.get(blob);
+      if (cached) return cached;
       const url = URL.createObjectURL(blob);
       objectUrls.add(url);
+      blobUrlCache.set(blob, url);
       return url;
     }
 
@@ -2300,26 +2323,69 @@
       return `${url}#t=0.1`;
     }
 
+    function videoCoverAttributes(item, url) {
+      const poster = videoPosterCache.get(item.id);
+      return poster
+        ? `poster="${escapeHtml(poster)}"`
+        : `data-video-src="${escapeHtml(videoCoverSource(url))}"`;
+    }
+
     function hydrateVideoCovers() {
+      mediaHydrationScheduled = false;
+      if (!videoCoverObserver && "IntersectionObserver" in window) {
+        videoCoverObserver = new IntersectionObserver(items => {
+          items.forEach(item => {
+            if (!item.isIntersecting) return;
+            const video = item.target;
+            if (!video.src && video.dataset.videoSrc) video.src = video.dataset.videoSrc;
+            videoCoverObserver.unobserve(video);
+          });
+        }, { rootMargin: "240px 0px" });
+      }
       document.querySelectorAll("video[data-video-cover]").forEach(video => {
+        const cachedPoster = videoPosterCache.get(video.dataset.mediaId);
+        if (cachedPoster) {
+          video.poster = cachedPoster;
+          return;
+        }
         const capture = () => {
           try {
             if (!video.videoWidth || !video.videoHeight) return;
-            const scale = Math.min(1, 960 / video.videoWidth);
+            const scale = Math.min(1, 480 / video.videoWidth);
             const canvas = document.createElement("canvas");
             canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
             canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
             const context = canvas.getContext("2d");
             if (!context) return;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            video.poster = canvas.toDataURL("image/jpeg", 0.76);
+            const poster = canvas.toDataURL("image/jpeg", 0.68);
+            videoPosterCache.set(video.dataset.mediaId, poster);
+            document.querySelectorAll("video[data-video-cover]").forEach(candidate => {
+              if (candidate.dataset.mediaId === video.dataset.mediaId) candidate.poster = poster;
+            });
           } catch {
             // The native first frame remains available when canvas capture is blocked.
           }
         };
         video.addEventListener("loadeddata", capture, { once: true });
         video.addEventListener("seeked", capture, { once: true });
+        if (videoCoverObserver) {
+          videoCoverObserver.observe(video);
+        } else if (!video.src && video.dataset.videoSrc) {
+          video.src = video.dataset.videoSrc;
+        }
       });
+    }
+
+    function scheduleVideoCoverHydration() {
+      if (mediaHydrationScheduled) return;
+      mediaHydrationScheduled = true;
+      const run = () => hydrateVideoCovers();
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(run, { timeout: 700 });
+      } else {
+        window.setTimeout(run, 60);
+      }
     }
 
     function viewerEntry() {
@@ -2403,6 +2469,7 @@
     }
 
     function renderTimeline() {
+      videoCoverObserver?.disconnect();
       const list = filteredEntries();
       if (!list.length) {
         els.timeline.innerHTML = `<div class="empty-state">这里暂时没有符合条件的记录</div>`;
@@ -2417,8 +2484,8 @@
               return `<div class="media-item">
                 <button class="media-open" type="button" data-open-media="${mediaIndex}" aria-label="打开${isVideo ? "视频" : "照片"}">
                   ${isVideo
-                    ? `<video src="${escapeHtml(videoCoverSource(url))}" muted playsinline preload="metadata" crossorigin="anonymous" data-video-cover></video>`
-                    : `<img src="${escapeHtml(url)}" alt="${escapeHtml(item.name)}">`}
+                    ? `<video ${videoCoverAttributes(item, url)} muted playsinline preload="none" crossorigin="anonymous" data-video-cover data-media-id="${escapeHtml(item.id)}"></video>`
+                    : `<img src="${escapeHtml(url)}" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async">`}
                 </button>
                 <span class="media-badge"><span data-icon="${isVideo ? "video" : "image"}"></span>${isVideo ? "Vlog" : "Photo"}</span>
               </div>`;
@@ -2442,7 +2509,7 @@
           </div>
         </article>`;
       }).join("");
-      requestAnimationFrame(hydrateVideoCovers);
+      scheduleVideoCoverHydration();
     }
 
     function renderPreview() {
@@ -2458,17 +2525,23 @@
         return `<div class="preview">
           <button class="media-open" type="button" data-open-media="${index}" aria-label="打开${isVideo ? "视频" : "照片"}">
             ${isVideo
-              ? `<video src="${escapeHtml(videoCoverSource(url))}" muted playsinline preload="metadata" crossorigin="anonymous" data-video-cover></video>`
-              : `<img src="${escapeHtml(url)}" alt="${escapeHtml(item.name)}">`}
+              ? `<video ${videoCoverAttributes(item, url)} muted playsinline preload="none" crossorigin="anonymous" data-video-cover data-media-id="${escapeHtml(item.id)}"></video>`
+              : `<img src="${escapeHtml(url)}" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async">`}
           </button>
           <button type="button" data-remove-media="${index}" title="移除媒体" aria-label="移除媒体"><span data-icon="x"></span></button>
         </div>`;
       }).join("");
-      requestAnimationFrame(hydrateVideoCovers);
+      scheduleVideoCoverHydration();
     }
 
     function loadEditor(entry) {
       if (!entry) return;
+      if (pendingSaveEntry && pendingSaveEntry.id !== entry.id) {
+        const pending = pendingSaveEntry;
+        pendingSaveEntry = null;
+        clearTimeout(saveTimer);
+        persistEntry(pending, { silent: true }).catch(error => console.error(error));
+      }
       currentId = entry.id;
       els.titleInput.value = entry.title || "";
       els.dateInput.value = formatDateForInput(entry.createdAt);
@@ -2495,12 +2568,15 @@
       };
     }
 
-    function storeDraft() {
-      const entry = collectEditor();
+    function storeDraftEntry(entry) {
       const key = draftKey();
       if (!entry || !key) return;
       const { media, ...draft } = entry;
       localStorage.setItem(key, JSON.stringify(draft));
+    }
+
+    function storeDraft() {
+      storeDraftEntry(collectEditor());
     }
 
     async function restoreDraft() {
@@ -2525,49 +2601,83 @@
       localStorage.removeItem(key);
     }
 
-    async function saveCurrent({ silent = false } = {}) {
-      const entry = collectEditor();
+    async function persistEntry(entry, { silent = false } = {}) {
       if (!entry) return;
-      if (!silent) setSaveState("保存中", true);
+      if (!silent && entry.id === currentId) setSaveState("保存中", true);
       entries = entries.map(item => item.id === entry.id ? entry : item);
+      diaryViewsDirty = true;
       if (CLOUD_ENABLED && !navigator.onLine) {
-        storeDraft();
-        setSaveState("离线，草稿已保存在本机", true);
-        renderAll();
+        storeDraftEntry(entry);
+        if (entry.id === currentId) setSaveState("离线，草稿已保存在本机", true);
         return;
       }
       try {
         await putEntry(entry);
       } catch (error) {
         if (CLOUD_ENABLED && isConnectionError(error)) {
-          storeDraft();
-          setSaveState("连接中断，草稿已保存在本机", true);
-          renderAll();
+          storeDraftEntry(entry);
+          if (entry.id === currentId) setSaveState("连接中断，草稿已保存在本机", true);
           return;
         }
         throw error;
       }
       const key = draftKey();
-      if (key) localStorage.removeItem(key);
-      setSaveState("已自动保存");
-      renderAll();
+      if (key) {
+        try {
+          const storedDraft = JSON.parse(localStorage.getItem(key));
+          if (storedDraft?.id === entry.id) localStorage.removeItem(key);
+        } catch {
+          localStorage.removeItem(key);
+        }
+      }
+      if (entry.id === currentId) setSaveState("已自动保存");
+    }
+
+    async function saveCurrent(options = {}) {
+      clearTimeout(saveTimer);
+      pendingSaveEntry = null;
+      await persistEntry(collectEditor(), options);
     }
 
     function scheduleSave() {
+      const entry = collectEditor();
+      if (!entry) return;
       setSaveState("编辑中", true);
-      storeDraft();
+      entries = entries.map(item => item.id === entry.id ? entry : item);
+      diaryViewsDirty = true;
+      storeDraftEntry(entry);
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => saveCurrent({ silent: true }), 650);
+      pendingSaveEntry = entry;
+      saveTimer = setTimeout(() => {
+        if (pendingSaveEntry?.id === entry.id) pendingSaveEntry = null;
+        persistEntry(entry, { silent: true }).catch(error => {
+          console.error(error);
+          if (entry.id === currentId) setSaveState("自动保存失败，草稿仍在本机", true);
+        });
+      }, 1400);
     }
 
     function renderAll() {
-      clearObjectUrls();
       renderChips();
       renderStats();
       renderList();
       renderTimeline();
       renderPreview();
       if (els.mediaDialog.open) renderMediaViewer();
+      diaryViewsDirty = false;
+    }
+
+    function renderDiaryViews() {
+      renderChips();
+      renderStats();
+      renderList();
+      renderTimeline();
+      diaryViewsDirty = false;
+    }
+
+    function renderFilteredViews() {
+      renderList();
+      renderTimeline();
     }
 
     async function addNewEntry() {
@@ -3222,6 +3332,7 @@
     }
 
     function showPanel(name) {
+      if ((name === "gallery" || name === "rail") && diaryViewsDirty) renderDiaryViews();
       els.panels.forEach(panel => panel.classList.toggle("active", panel.dataset.panel === name));
       els.mobileTabs.forEach(tab => tab.classList.toggle("active", tab.dataset.tab === name));
     }
@@ -3278,12 +3389,16 @@
         event.preventDefault();
         deleteCurrent();
       });
-      els.searchInput.addEventListener("input", () => renderAll(false));
+      els.searchInput.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(renderFilteredViews, 160);
+      });
       els.filterChips.addEventListener("click", event => {
         const button = event.target.closest("[data-type]");
         if (!button) return;
         activeType = button.dataset.type;
-        renderAll();
+        renderFilteredViews();
+        renderChips();
       });
       els.entryList.addEventListener("click", event => {
         const row = event.target.closest("[data-id]");
@@ -3405,8 +3520,11 @@
         bindEvents();
         eventsBound = true;
       }
-      if (entries[0]) loadEditor(entries[0]);
-      renderAll();
+      if (entries[0]) {
+        loadEditor(entries[0]);
+      } else {
+        renderAll();
+      }
       diaryReady = true;
       updateNetworkState();
     }
