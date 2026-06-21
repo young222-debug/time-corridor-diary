@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="时间长廊">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ZFOqDDAA21MVnlfZKPaNDN5UsLlM5fOhaWfD3gw+AVU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ewEzOnaQIoTkyNR2P71yQfcvWBLpkphaRoG5zt4ptOM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" href="./assets/favicon.png">
@@ -1614,6 +1614,7 @@
       <button class="text-button" type="button" data-close-dialog="accountDialog">关闭</button>
     </div>
     <form class="dialog-body dialog-form" id="passwordForm">
+      <p class="data-note">连续 10 分钟没有操作，或应用在后台停留超过 10 分钟后，会自动锁定并要求重新登录。编辑中的内容会先保留为本机草稿。</p>
       <div class="field">
         <label for="currentPasswordInput">当前密码</label>
         <input id="currentPasswordInput" type="password" autocomplete="current-password">
@@ -1695,6 +1696,9 @@
     const MEDIA_BUCKET = "diary-media";
     const SESSION_KEY = "time-corridor-account";
     const CUSTOM_ACCOUNTS_KEY = "time-corridor-custom-accounts";
+    const LAST_ACTIVITY_KEY = "time-corridor-last-activity";
+    const AUTO_LOCK_MS = 10 * 60 * 1000;
+    const ACTIVITY_WRITE_INTERVAL = 15 * 1000;
     const CLOUD_CONFIG = window.DIARY_CONFIG || {};
     const CLOUD_ENABLED = Boolean(
       CLOUD_CONFIG.supabaseUrl &&
@@ -1787,6 +1791,9 @@
     let saveTimer = null;
     let searchTimer = null;
     let pendingSaveEntry = null;
+    let autoLockTimer = null;
+    let lastActivityWrite = 0;
+    let lockInProgress = false;
     let diaryReady = false;
     let eventsBound = false;
     let currentAccount = null;
@@ -1929,6 +1936,52 @@
       return currentAccount ? `time-corridor-draft-${currentAccount.name.toLowerCase()}` : null;
     }
 
+    function lastActivityTime() {
+      const value = Number(localStorage.getItem(LAST_ACTIVITY_KEY));
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function recordActivity(force = false) {
+      if (!currentAccount || lockInProgress) return;
+      const now = Date.now();
+      if (!force && now - lastActivityWrite < ACTIVITY_WRITE_INTERVAL) return;
+      lastActivityWrite = now;
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(now));
+    }
+
+    function stopAutoLock() {
+      clearInterval(autoLockTimer);
+      autoLockTimer = null;
+    }
+
+    async function checkAutoLock() {
+      if (!currentAccount || lockInProgress) return;
+      const mediaBusy = els.uploadProgress.classList.contains("active");
+      const backupBusy = els.fullBackupBtn.disabled || els.textBackupBtn.disabled;
+      const videoPlaying = Array.from(document.querySelectorAll("video"))
+        .some(video => !video.paused && !video.ended);
+      if (mediaBusy || backupBusy || videoPlaying) {
+        recordActivity(true);
+        return;
+      }
+      const lastActivity = lastActivityTime();
+      if (!lastActivity) {
+        recordActivity(true);
+        return;
+      }
+      if (Date.now() - lastActivity >= AUTO_LOCK_MS) {
+        await lockDiary("为保护隐私，已在 10 分钟无操作后自动锁定。");
+      }
+    }
+
+    function startAutoLock() {
+      stopAutoLock();
+      recordActivity(true);
+      autoLockTimer = window.setInterval(() => {
+        checkAutoLock().catch(error => console.error(error));
+      }, 30 * 1000);
+    }
+
     function showLogin() {
       els.loginScreen.hidden = false;
       els.diaryApp.inert = true;
@@ -1977,6 +2030,7 @@
       els.accountBtn.hidden = !CLOUD_ENABLED;
       els.historyBtn.hidden = !CLOUD_ENABLED;
       if (!diaryReady) await initDiary();
+      startAutoLock();
     }
 
     async function handleLogin(event) {
@@ -2045,23 +2099,33 @@
       await unlockDiary(account);
     }
 
-    async function lockDiary() {
+    async function lockDiary(message = "") {
+      if (lockInProgress) return;
+      lockInProgress = true;
       storeDraft();
       clearTimeout(saveTimer);
       pendingSaveEntry = null;
+      stopAutoLock();
       videoCoverObserver?.disconnect();
       videoPosterCache.clear();
-      if (CLOUD_ENABLED) {
-        await cloudClient.auth.signOut();
-        cloudUser = null;
-        currentAccount = null;
-        diaryReady = false;
-        entries = [];
-        currentId = null;
-      } else {
-        sessionStorage.removeItem(SESSION_KEY);
+      try {
+        if (CLOUD_ENABLED) {
+          await cloudClient.auth.signOut({ scope: "local" });
+          cloudUser = null;
+          currentAccount = null;
+          diaryReady = false;
+          entries = [];
+          currentId = null;
+        } else {
+          sessionStorage.removeItem(SESSION_KEY);
+          currentAccount = null;
+        }
+        localStorage.removeItem(LAST_ACTIVITY_KEY);
+        showLogin();
+        if (message) els.loginMessage.textContent = message;
+      } finally {
+        lockInProgress = false;
       }
-      showLogin();
     }
 
     function openDb() {
@@ -3337,7 +3401,9 @@
     }
 
     function bindEvents() {
-      els.lockBtn.addEventListener("click", lockDiary);
+      els.lockBtn.addEventListener("click", () => {
+        lockDiary().catch(error => console.error(error));
+      });
       els.recycleBtn.addEventListener("click", () => {
         renderRecycleBin();
         els.recycleDialog.showModal();
@@ -3546,6 +3612,14 @@
         const { data, error } = await cloudClient.auth.getSession();
         if (error) throw error;
         if (data.session?.user) {
+          const lastActivity = lastActivityTime();
+          if (lastActivity && Date.now() - lastActivity >= AUTO_LOCK_MS) {
+            await cloudClient.auth.signOut({ scope: "local" });
+            localStorage.removeItem(LAST_ACTIVITY_KEY);
+            showLogin();
+            els.loginMessage.textContent = "为保护隐私，应用已在长时间未使用后自动锁定。";
+            return;
+          }
           cloudUser = data.session.user;
           await unlockDiary({
             name: cloudUser.email || "云端用户",
@@ -3558,6 +3632,14 @@
       }
       const sessionAccount = accountFor(sessionStorage.getItem(SESSION_KEY) || "");
       if (sessionAccount) {
+        const lastActivity = lastActivityTime();
+        if (lastActivity && Date.now() - lastActivity >= AUTO_LOCK_MS) {
+          sessionStorage.removeItem(SESSION_KEY);
+          localStorage.removeItem(LAST_ACTIVITY_KEY);
+          showLogin();
+          els.loginMessage.textContent = "为保护隐私，应用已在长时间未使用后自动锁定。";
+          return;
+        }
         unlockDiary(sessionAccount).catch(error => {
           console.error(error);
           showLogin();
@@ -3568,12 +3650,28 @@
     }
 
     window.addEventListener("pagehide", () => {
+      recordActivity(true);
       storeDraft();
       clearObjectUrls();
     });
     window.addEventListener("beforeunload", () => clearObjectUrls());
     window.addEventListener("online", updateNetworkState);
     window.addEventListener("offline", updateNetworkState);
+    ["pointerdown", "keydown", "input", "touchstart", "scroll"].forEach(type => {
+      window.addEventListener(type, () => recordActivity(), { passive: true });
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        recordActivity(true);
+      } else {
+        checkAutoLock().catch(error => console.error(error));
+      }
+    });
+    window.addEventListener("storage", event => {
+      if (event.key === LAST_ACTIVITY_KEY && event.newValue === null && currentAccount) {
+        lockDiary("账号已在另一个页面锁定。").catch(error => console.error(error));
+      }
+    });
     window.addEventListener("load", () => {
       registerServiceWorker().catch(error => console.warn("Service worker unavailable", error));
       initAuth().catch(error => {
