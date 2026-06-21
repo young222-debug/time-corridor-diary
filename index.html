@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="时间长廊">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-K26gmNeP/Zp20fNbW62EOc/QYnDI8kl2XwbYnzAQSA0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Y27kT5xxu42kFBn/fE5a07ydxt8v3o9I1NHjM3Jbx2M='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" href="./assets/favicon.png">
@@ -502,6 +502,22 @@
       background: #e4d9c8;
     }
 
+    .media-open {
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      color: inherit;
+      cursor: zoom-in;
+    }
+
+    .media-open img,
+    .media-open video,
+    .media-badge {
+      pointer-events: none;
+    }
+
     .media-item img,
     .media-item video {
       width: 100%;
@@ -747,7 +763,7 @@
       display: block;
     }
 
-    .preview button {
+    .preview > button[data-remove-media] {
       position: absolute;
       right: 8px;
       top: 8px;
@@ -756,6 +772,94 @@
       border-radius: 50%;
       background: rgba(28, 27, 24, 0.72);
       color: #fff8e9;
+      z-index: 2;
+    }
+
+    .media-viewer {
+      width: min(1120px, calc(100vw - 28px));
+      max-height: calc(100vh - 28px);
+      max-height: calc(100dvh - 28px);
+      border-color: rgba(255, 250, 240, 0.18);
+      background: #171916;
+      color: #fffaf0;
+    }
+
+    .media-viewer::backdrop {
+      background: rgba(15, 16, 14, 0.88);
+      backdrop-filter: blur(12px);
+    }
+
+    .media-viewer-head,
+    .media-viewer-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 16px;
+      background: rgba(23, 25, 22, 0.96);
+    }
+
+    .media-viewer-head {
+      border-bottom: 1px solid rgba(255, 250, 240, 0.14);
+    }
+
+    .media-viewer-head h2 {
+      min-width: 0;
+      margin: 0;
+      overflow: hidden;
+      font-family: var(--font-serif);
+      font-size: 20px;
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .media-viewer .text-button {
+      border-color: rgba(255, 250, 240, 0.18);
+      color: #fffaf0;
+    }
+
+    .media-stage {
+      display: grid;
+      place-items: center;
+      height: min(72vh, 760px);
+      height: min(72dvh, 760px);
+      min-height: 280px;
+      padding: 12px;
+      overflow: hidden;
+      touch-action: pan-y;
+      background: #0e100e;
+    }
+
+    .media-stage img,
+    .media-stage video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .media-viewer-foot {
+      border-top: 1px solid rgba(255, 250, 240, 0.14);
+      color: rgba(255, 250, 240, 0.72);
+      font-size: 12px;
+    }
+
+    .media-viewer-nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .media-viewer-nav button {
+      min-width: 78px;
+    }
+
+    .media-viewer-nav button:disabled {
+      opacity: 0.36;
+      cursor: default;
+      transform: none;
     }
 
     .empty-state {
@@ -1279,6 +1383,28 @@
         max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
       }
 
+      .media-viewer {
+        width: 100%;
+        max-width: none;
+        max-height: 100dvh;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+      }
+
+      .media-stage {
+        height: calc(100dvh - 126px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        padding: 8px;
+      }
+
+      .media-viewer-head {
+        padding-top: calc(14px + env(safe-area-inset-top));
+      }
+
+      .media-viewer-foot {
+        padding-bottom: calc(14px + env(safe-area-inset-bottom));
+      }
+
       .dialog-head {
         position: sticky;
         top: 0;
@@ -1540,6 +1666,21 @@
     </div>
   </dialog>
 
+  <dialog class="media-viewer" id="mediaDialog" aria-labelledby="mediaViewerTitle">
+    <div class="media-viewer-head">
+      <h2 id="mediaViewerTitle">媒体预览</h2>
+      <button class="text-button" id="mediaCloseBtn" type="button">关闭</button>
+    </div>
+    <div class="media-stage" id="mediaStage"></div>
+    <div class="media-viewer-foot">
+      <span id="mediaViewerMeta"></span>
+      <div class="media-viewer-nav">
+        <button class="text-button" id="mediaPrevBtn" type="button">上一张</button>
+        <button class="text-button" id="mediaNextBtn" type="button">下一张</button>
+      </div>
+    </div>
+  </dialog>
+
   <script>
     let DB_NAME = "time-corridor-diary";
     const STORE_NAME = "entries";
@@ -1607,6 +1748,13 @@
       historyList: document.querySelector("#historyList"),
       accountDialog: document.querySelector("#accountDialog"),
       dataDialog: document.querySelector("#dataDialog"),
+      mediaDialog: document.querySelector("#mediaDialog"),
+      mediaStage: document.querySelector("#mediaStage"),
+      mediaViewerTitle: document.querySelector("#mediaViewerTitle"),
+      mediaViewerMeta: document.querySelector("#mediaViewerMeta"),
+      mediaCloseBtn: document.querySelector("#mediaCloseBtn"),
+      mediaPrevBtn: document.querySelector("#mediaPrevBtn"),
+      mediaNextBtn: document.querySelector("#mediaNextBtn"),
       dataEntryCount: document.querySelector("#dataEntryCount"),
       dataRecycleCount: document.querySelector("#dataRecycleCount"),
       dataMediaCount: document.querySelector("#dataMediaCount"),
@@ -1636,6 +1784,8 @@
     let cloudClient = null;
     let cloudUser = null;
     let tusLibraryPromise = null;
+    let mediaViewerState = { entryId: null, index: 0 };
+    let mediaSwipeStartX = null;
     const objectUrls = new Set();
 
     function isConnectionError(error) {
@@ -2142,6 +2292,73 @@
       return url;
     }
 
+    function mediaSource(item) {
+      return item.url || mediaUrl(item.blob);
+    }
+
+    function videoCoverSource(url) {
+      return `${url}#t=0.1`;
+    }
+
+    function hydrateVideoCovers() {
+      document.querySelectorAll("video[data-video-cover]").forEach(video => {
+        const capture = () => {
+          try {
+            if (!video.videoWidth || !video.videoHeight) return;
+            const scale = Math.min(1, 960 / video.videoWidth);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+            canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+            const context = canvas.getContext("2d");
+            if (!context) return;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            video.poster = canvas.toDataURL("image/jpeg", 0.76);
+          } catch {
+            // The native first frame remains available when canvas capture is blocked.
+          }
+        };
+        video.addEventListener("loadeddata", capture, { once: true });
+        video.addEventListener("seeked", capture, { once: true });
+      });
+    }
+
+    function viewerEntry() {
+      return entries.find(entry => entry.id === mediaViewerState.entryId) || null;
+    }
+
+    function renderMediaViewer() {
+      const entry = viewerEntry();
+      const media = entry?.media || [];
+      if (!media.length) {
+        if (els.mediaDialog.open) els.mediaDialog.close();
+        return;
+      }
+      mediaViewerState.index = Math.max(0, Math.min(mediaViewerState.index, media.length - 1));
+      const item = media[mediaViewerState.index];
+      const source = mediaSource(item);
+      const isVideo = item.type.startsWith("video/");
+      els.mediaViewerTitle.textContent = entry.title || "媒体预览";
+      els.mediaViewerMeta.textContent = `${mediaViewerState.index + 1} / ${media.length} · ${isVideo ? "视频" : "照片"} · ${formatBytes(item.size)}`;
+      els.mediaStage.innerHTML = isVideo
+        ? `<video src="${escapeHtml(source)}" controls playsinline preload="metadata"></video>`
+        : `<img src="${escapeHtml(source)}" alt="${escapeHtml(item.name || entry.title || "日记照片")}">`;
+      els.mediaPrevBtn.disabled = media.length < 2;
+      els.mediaNextBtn.disabled = media.length < 2;
+    }
+
+    function openMediaViewer(entryId, index) {
+      mediaViewerState = { entryId, index: Number(index) || 0 };
+      renderMediaViewer();
+      if (!els.mediaDialog.open) els.mediaDialog.showModal();
+    }
+
+    function stepMediaViewer(direction) {
+      const media = viewerEntry()?.media || [];
+      if (media.length < 2) return;
+      mediaViewerState.index = (mediaViewerState.index + direction + media.length) % media.length;
+      renderMediaViewer();
+    }
+
     function setSaveState(text, busy = false) {
       els.saveState.textContent = text;
       document.querySelector(".save-dot").style.background = busy ? "var(--gold)" : "var(--sage)";
@@ -2194,11 +2411,15 @@
       els.timeline.innerHTML = list.map((entry, index) => {
         const media = entry.media || [];
         const mediaHtml = media.length
-          ? `<div class="media-strip">${media.slice(0, 3).map(item => {
-              const url = item.url || mediaUrl(item.blob);
+          ? `<div class="media-strip">${media.slice(0, 3).map((item, mediaIndex) => {
+              const url = mediaSource(item);
               const isVideo = item.type.startsWith("video/");
               return `<div class="media-item">
-                ${isVideo ? `<video src="${url}" controls playsinline preload="metadata"></video>` : `<img src="${url}" alt="${escapeHtml(item.name)}">`}
+                <button class="media-open" type="button" data-open-media="${mediaIndex}" aria-label="打开${isVideo ? "视频" : "照片"}">
+                  ${isVideo
+                    ? `<video src="${escapeHtml(videoCoverSource(url))}" muted playsinline preload="metadata" crossorigin="anonymous" data-video-cover></video>`
+                    : `<img src="${escapeHtml(url)}" alt="${escapeHtml(item.name)}">`}
+                </button>
                 <span class="media-badge"><span data-icon="${isVideo ? "video" : "image"}"></span>${isVideo ? "Vlog" : "Photo"}</span>
               </div>`;
             }).join("")}</div>`
@@ -2221,6 +2442,7 @@
           </div>
         </article>`;
       }).join("");
+      requestAnimationFrame(hydrateVideoCovers);
     }
 
     function renderPreview() {
@@ -2231,13 +2453,18 @@
         return;
       }
       els.previewGrid.innerHTML = media.map((item, index) => {
-        const url = item.url || mediaUrl(item.blob);
+        const url = mediaSource(item);
         const isVideo = item.type.startsWith("video/");
         return `<div class="preview">
-          ${isVideo ? `<video src="${url}" controls playsinline preload="metadata"></video>` : `<img src="${url}" alt="${escapeHtml(item.name)}">`}
+          <button class="media-open" type="button" data-open-media="${index}" aria-label="打开${isVideo ? "视频" : "照片"}">
+            ${isVideo
+              ? `<video src="${escapeHtml(videoCoverSource(url))}" muted playsinline preload="metadata" crossorigin="anonymous" data-video-cover></video>`
+              : `<img src="${escapeHtml(url)}" alt="${escapeHtml(item.name)}">`}
+          </button>
           <button type="button" data-remove-media="${index}" title="移除媒体" aria-label="移除媒体"><span data-icon="x"></span></button>
         </div>`;
       }).join("");
+      requestAnimationFrame(hydrateVideoCovers);
     }
 
     function loadEditor(entry) {
@@ -2340,6 +2567,7 @@
       renderList();
       renderTimeline();
       renderPreview();
+      if (els.mediaDialog.open) renderMediaViewer();
     }
 
     async function addNewEntry() {
@@ -2587,6 +2815,19 @@
       return extension || fallback;
     }
 
+    function approveMediaSelection(files) {
+      const selected = Array.from(files);
+      const totalSize = selected.reduce((sum, file) => sum + file.size, 0);
+      const largeVideos = selected.filter(file => isVideoFile(file) && file.size >= 20 * 1024 * 1024);
+      if (!largeVideos.length && totalSize < 40 * 1024 * 1024) return true;
+      const details = largeVideos.length
+        ? `其中 ${largeVideos.length} 个视频较大，`
+        : "";
+      return confirm(
+        `本次选择 ${selected.length} 个文件，共 ${formatBytes(totalSize)}。${details}上传可能需要一些时间，是否继续？`
+      );
+    }
+
     async function uploadVideoResumable(file, storagePath, onProgress) {
       await loadTusLibrary();
       const { data: { session }, error: sessionError } = await cloudClient.auth.getSession();
@@ -2659,15 +2900,24 @@
           alert("请选择 JPEG、PNG、WebP、GIF 图片，或 MP4、MOV、WebM 视频。");
           return;
         }
+        if (!approveMediaSelection(selected)) {
+          els.mediaInput.value = "";
+          setSaveState("已取消上传");
+          return;
+        }
         const additions = [];
         const failures = [];
         for (let index = 0; index < selected.length; index++) {
           const file = selected[index];
           const video = isVideoFile(file);
           setSaveState(`上传${video ? "视频" : "照片"} ${index + 1}/${selected.length}`, true);
-          setUploadProgress(file.name, 0);
+          setUploadProgress(`${file.name} · ${formatBytes(file.size)}`, 0);
           try {
             const uploadFile = video ? file : await compressImage(file);
+            if (!video && uploadFile.size < file.size) {
+              setSaveState(`照片已压缩 ${formatBytes(file.size)} → ${formatBytes(uploadFile.size)}`, true);
+              setUploadProgress(`${uploadFile.name} · ${formatBytes(uploadFile.size)}`, 0);
+            }
             const maxSize = video ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
             if (uploadFile.size > maxSize) {
               throw new Error(`${file.name} 超过 ${video ? 50 : 10} MB`);
@@ -2676,7 +2926,7 @@
             const extension = safeExtension(uploadFile, video ? "mp4" : "jpg");
             const storagePath = `${cloudUser.id}/${entry.id}/${mediaId}.${extension}`;
             await uploadCloudFile(uploadFile, storagePath, percentage => {
-              setUploadProgress(file.name, percentage);
+              setUploadProgress(`${uploadFile.name} · ${formatBytes(uploadFile.size)}`, percentage);
               setSaveState(`上传${video ? "视频" : "照片"} ${Math.round(percentage)}%`, true);
             });
 
@@ -2724,6 +2974,11 @@
         setSaveState(failures.length ? `已上传 ${additions.length} 份，${failures.length} 份失败` : "媒体已同步");
         renderAll();
         if (failures.length) alert(`以下媒体上传失败：\n${failures.join("\n")}`);
+        return;
+      }
+      if (!approveMediaSelection(files)) {
+        els.mediaInput.value = "";
+        setSaveState("已取消添加");
         return;
       }
       setSaveState("添加媒体中", true);
@@ -3038,9 +3293,13 @@
         showPanel("editor");
       });
       els.timeline.addEventListener("click", event => {
-        if (event.target.closest("video")) return;
         const card = event.target.closest("[data-id]");
         if (!card) return;
+        const mediaButton = event.target.closest("[data-open-media]");
+        if (mediaButton) {
+          openMediaViewer(card.dataset.id, mediaButton.dataset.openMedia);
+          return;
+        }
         const entry = entries.find(item => item.id === card.dataset.id);
         loadEditor(entry);
       });
@@ -3058,12 +3317,43 @@
         });
       });
       els.previewGrid.addEventListener("click", event => {
+        const mediaButton = event.target.closest("[data-open-media]");
+        if (mediaButton) {
+          openMediaViewer(currentId, mediaButton.dataset.openMedia);
+          return;
+        }
         const button = event.target.closest("[data-remove-media]");
         if (!button) return;
         removeMedia(Number(button.dataset.removeMedia)).catch(error => {
           console.error(error);
           setSaveState("媒体删除失败，请重试", true);
         });
+      });
+      els.mediaCloseBtn.addEventListener("click", () => els.mediaDialog.close());
+      els.mediaPrevBtn.addEventListener("click", () => stepMediaViewer(-1));
+      els.mediaNextBtn.addEventListener("click", () => stepMediaViewer(1));
+      els.mediaDialog.addEventListener("click", event => {
+        if (event.target === els.mediaDialog) els.mediaDialog.close();
+      });
+      els.mediaDialog.addEventListener("close", () => {
+        els.mediaStage.innerHTML = "";
+        mediaViewerState = { entryId: null, index: 0 };
+      });
+      els.mediaStage.addEventListener("touchstart", event => {
+        mediaSwipeStartX = event.touches[0]?.clientX ?? null;
+      }, { passive: true });
+      els.mediaStage.addEventListener("touchend", event => {
+        if (mediaSwipeStartX === null) return;
+        const endX = event.changedTouches[0]?.clientX ?? mediaSwipeStartX;
+        const distance = endX - mediaSwipeStartX;
+        mediaSwipeStartX = null;
+        if (Math.abs(distance) < 50) return;
+        stepMediaViewer(distance > 0 ? -1 : 1);
+      }, { passive: true });
+      document.addEventListener("keydown", event => {
+        if (!els.mediaDialog.open) return;
+        if (event.key === "ArrowLeft") stepMediaViewer(-1);
+        if (event.key === "ArrowRight") stepMediaViewer(1);
       });
       els.dataBtn.addEventListener("click", () => {
         renderDataOverview();
