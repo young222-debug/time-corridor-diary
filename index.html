@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="时间长廊">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-IZ/19npe6LQ0iQMjEuT/55jNNVYxPYr3xNXuLkvkp14='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-n2plzYpzp/K2sACUi0EthtC4jIdglpwM1quW+bj/dUU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" href="./assets/favicon.png">
@@ -1096,6 +1096,64 @@
       font-size: 11px;
     }
 
+    .storage-panel {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 246, 0.72);
+    }
+
+    .storage-panel-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(130px, 170px);
+      gap: 14px;
+      align-items: end;
+    }
+
+    .storage-panel h3,
+    .storage-panel p {
+      margin: 0;
+    }
+
+    .storage-panel h3 {
+      font-size: 14px;
+    }
+
+    .storage-panel p {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .storage-track {
+      height: 9px;
+      overflow: hidden;
+      border: 1px solid rgba(104, 120, 102, 0.2);
+      border-radius: 999px;
+      background: rgba(104, 120, 102, 0.09);
+    }
+
+    .storage-track span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--sage), var(--gold));
+      transition: width 240ms ease, background 240ms ease;
+    }
+
+    .storage-track[data-level="warn"] span {
+      background: linear-gradient(90deg, var(--gold), #b7773a);
+    }
+
+    .storage-track[data-level="full"] span {
+      background: linear-gradient(90deg, var(--wine), #b7773a);
+    }
+
     .backup-options {
       display: grid;
       gap: 10px;
@@ -1391,6 +1449,10 @@
       .stats,
       .data-overview,
       .conflict-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .storage-panel-head {
         grid-template-columns: 1fr;
       }
 
@@ -1777,6 +1839,26 @@
         <div class="data-metric"><strong id="dataMediaCount">0</strong><span>照片与视频</span></div>
         <div class="data-metric"><strong id="dataStorageSize">0 KB</strong><span>媒体占用</span></div>
       </div>
+      <div class="storage-panel" aria-label="媒体空间提醒">
+        <div class="storage-panel-head">
+          <div>
+            <h3>媒体空间提醒</h3>
+            <p id="storageBudgetMessage">设置一个提醒线，照片和视频接近这个容量时会提示你备份或清理。</p>
+          </div>
+          <div class="field">
+            <label for="storageBudgetSelect">提醒线</label>
+            <select id="storageBudgetSelect">
+              <option value="524288000">500 MB</option>
+              <option value="1073741824">1 GB</option>
+              <option value="2147483648">2 GB</option>
+              <option value="5368709120">5 GB</option>
+            </select>
+          </div>
+        </div>
+        <div class="storage-track" id="storageBudgetTrack" data-level="calm">
+          <span id="storageBudgetBar"></span>
+        </div>
+      </div>
       <div class="backup-options">
         <div class="backup-option">
           <div>
@@ -1912,6 +1994,10 @@
       dataRecycleCount: document.querySelector("#dataRecycleCount"),
       dataMediaCount: document.querySelector("#dataMediaCount"),
       dataStorageSize: document.querySelector("#dataStorageSize"),
+      storageBudgetSelect: document.querySelector("#storageBudgetSelect"),
+      storageBudgetTrack: document.querySelector("#storageBudgetTrack"),
+      storageBudgetBar: document.querySelector("#storageBudgetBar"),
+      storageBudgetMessage: document.querySelector("#storageBudgetMessage"),
       fullBackupEstimate: document.querySelector("#fullBackupEstimate"),
       textBackupBtn: document.querySelector("#textBackupBtn"),
       fullBackupBtn: document.querySelector("#fullBackupBtn"),
@@ -3519,6 +3605,7 @@
       diaryViewsDirty = true;
       if (entry.id === currentId) renderPreview();
       renderStats();
+      if (els.dataDialog.open) renderDataOverview();
     }
 
     async function retryPendingMediaUploads() {
@@ -3630,6 +3717,7 @@
           pendingMediaUploads.length || failures.length ? "error" : "synced"
         );
         renderAll();
+        if (els.dataDialog.open) renderDataOverview();
         updatePendingUploadUi();
         if (pendingMediaUploads.length) scheduleMediaRetry();
         if (failures.length && !pendingMediaUploads.length) {
@@ -3664,6 +3752,7 @@
       els.mediaInput.value = "";
       setSaveState("已保存");
       renderAll();
+      if (els.dataDialog.open) renderDataOverview();
     }
 
     async function removeMedia(index) {
@@ -3687,12 +3776,14 @@
         entries = entries.map(item => item.id === entry.id ? entry : item);
         setSaveState("媒体已删除");
         renderAll();
+        if (els.dataDialog.open) renderDataOverview();
         return;
       }
       entry.media = (entry.media || []).filter((_, itemIndex) => itemIndex !== index);
       await putEntry(entry);
       entries = entries.map(item => item.id === entry.id ? entry : item);
       renderAll();
+      if (els.dataDialog.open) renderDataOverview();
     }
 
     function blobToDataUrl(blob) {
@@ -3746,6 +3837,33 @@
       return `time-corridor-last-backup-${account}`;
     }
 
+    function storageBudgetKey() {
+      const account = currentAccount?.name?.toLowerCase() || "local";
+      return `time-corridor-storage-budget-${account}`;
+    }
+
+    function selectedStorageBudget() {
+      const stored = Number(localStorage.getItem(storageBudgetKey()));
+      const fallback = 1073741824;
+      return Number.isFinite(stored) && stored > 0 ? stored : fallback;
+    }
+
+    function renderStorageBudget(mediaBytes) {
+      const budget = selectedStorageBudget();
+      const percentage = budget > 0 ? Math.min((mediaBytes / budget) * 100, 100) : 0;
+      const level = percentage >= 100 ? "full" : percentage >= 80 ? "warn" : "calm";
+      els.storageBudgetSelect.value = String(budget);
+      els.storageBudgetBar.style.width = `${percentage.toFixed(1)}%`;
+      els.storageBudgetTrack.dataset.level = level;
+      if (level === "full") {
+        els.storageBudgetMessage.textContent = `已经达到 ${formatBytes(budget)} 提醒线。建议先做一次完整备份，再清理不需要的视频。`;
+      } else if (level === "warn") {
+        els.storageBudgetMessage.textContent = `已使用 ${Math.round(percentage)}%，接近 ${formatBytes(budget)} 提醒线。最近上传大视频前可以先备份。`;
+      } else {
+        els.storageBudgetMessage.textContent = `已使用 ${Math.round(percentage)}%，距离 ${formatBytes(budget)} 提醒线还很宽松。`;
+      }
+    }
+
     function downloadJson(payload, fileName) {
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -3766,6 +3884,7 @@
       els.dataRecycleCount.textContent = recycledEntries.length;
       els.dataMediaCount.textContent = mediaItems.length;
       els.dataStorageSize.textContent = formatBytes(mediaBytes);
+      renderStorageBudget(mediaBytes);
       els.fullBackupEstimate.textContent = formatBytes(estimatedFullBytes);
       const lastBackup = localStorage.getItem(backupStorageKey());
       els.backupStatus.textContent = lastBackup
@@ -4055,6 +4174,10 @@
       els.dataBtn.addEventListener("click", () => {
         renderDataOverview();
         els.dataDialog.showModal();
+      });
+      els.storageBudgetSelect.addEventListener("change", () => {
+        localStorage.setItem(storageBudgetKey(), els.storageBudgetSelect.value);
+        renderDataOverview();
       });
       els.textBackupBtn.addEventListener("click", () => {
         exportDiary(false).catch(error => {
