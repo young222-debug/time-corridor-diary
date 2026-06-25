@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="时间长廊">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bUjR8zicJjlSF5BQtCcUNf6OEdmnrBx66K/xc4cMku4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qfVOnbONp55yRbXOuJVsbXFinOr9geMPscz0iw6z9yc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" href="./assets/favicon.png">
@@ -1109,6 +1109,12 @@
       background: rgba(104, 120, 102, 0.08);
     }
 
+    .invite-status[data-status="已发送"] {
+      border-color: rgba(49, 74, 91, 0.32);
+      color: var(--blue);
+      background: rgba(49, 74, 91, 0.08);
+    }
+
     .conflict-summary {
       margin: 0 0 14px;
       color: var(--muted);
@@ -1418,6 +1424,7 @@
     [data-icon="trash"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9 3h6l1 2h4v2H4V5h4zm-2 6h2v10h6V9h2v12H7zm4 0h2v8h-2z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9 3h6l1 2h4v2H4V5h4zm-2 6h2v10h6V9h2v12H7zm4 0h2v8h-2z'/%3E%3C/svg%3E"); }
     [data-icon="save"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 4h12l2 2v14H5zm2 2v12h10V7.2L15.8 6H15v5H8V6zm3 0v3h3V6zm-1 8h6v2H9z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 4h12l2 2v14H5zm2 2v12h10V7.2L15.8 6H15v5H8V6zm3 0v3h3V6zm-1 8h6v2H9z'/%3E%3C/svg%3E"); }
     [data-icon="lock"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10V8a5 5 0 0 1 10 0v2h2v11H5V10zm2 0h6V8a3 3 0 0 0-6 0zm-2 2v7h10v-7z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10V8a5 5 0 0 1 10 0v2h2v11H5V10zm2 0h6V8a3 3 0 0 0-6 0zm-2 2v7h10v-7z'/%3E%3C/svg%3E"); }
+    [data-icon="mail"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6h16v12H4zm2 2v.4l6 4.2 6-4.2V8zm0 2.8V16h12v-5.2l-6 4.2z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6h16v12H4zm2 2v.4l6 4.2 6-4.2V8zm0 2.8V16h12v-5.2l-6 4.2z'/%3E%3C/svg%3E"); }
     [data-icon="image"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 5h16v14H4zm2 2v8.2l3.2-3.2 2.6 2.6 3.6-4.6L18 13.3V7zm0 10h12l-2.5-3.2-3.4 4.3-2.9-2.9zm11-8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 5h16v14H4zm2 2v8.2l3.2-3.2 2.6 2.6 3.6-4.6L18 13.3V7zm0 10h12l-2.5-3.2-3.4 4.3-2.9-2.9zm11-8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0'/%3E%3C/svg%3E"); }
     [data-icon="video"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6h11v12H4zm2 2v8h7V8zm10 2 4-2v8l-4-2z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6h11v12H4zm2 2v8h7V8zm10 2 4-2v8l-4-2z'/%3E%3C/svg%3E"); }
     [data-icon="x"] { mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z'/%3E%3C/svg%3E"); -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z'/%3E%3C/svg%3E"); }
@@ -1939,7 +1946,7 @@
         <div class="invite-head">
           <div>
             <h3>邀请名单</h3>
-            <p>这里用于记录你准备邀请的人。真正创建账号仍需要在 Supabase 后台完成。</p>
+            <p>这里可以发送邀请邮件，也可以记录暂时还没发送的人。</p>
           </div>
         </div>
         <div class="invite-form-grid">
@@ -1956,7 +1963,8 @@
           <div class="field">
             <label for="inviteStatusInput">状态</label>
             <select id="inviteStatusInput">
-              <option>待创建</option>
+              <option>待发送</option>
+              <option>已发送</option>
               <option>已创建</option>
               <option>暂停</option>
             </select>
@@ -1969,6 +1977,7 @@
         <p class="dialog-message" id="inviteMessage" role="alert"></p>
         <div class="dialog-actions">
           <button class="ghost-button" id="clearInviteBtn" type="button">清空输入</button>
+          <button class="ghost-button" id="sendInviteBtn" type="button"><span data-icon="mail"></span>发送邀请</button>
           <button class="primary-button" id="saveInviteBtn" type="button"><span data-icon="save"></span>保存记录</button>
         </div>
         <div class="invite-list" id="inviteList"></div>
@@ -2163,6 +2172,7 @@
       inviteNoteInput: document.querySelector("#inviteNoteInput"),
       inviteMessage: document.querySelector("#inviteMessage"),
       saveInviteBtn: document.querySelector("#saveInviteBtn"),
+      sendInviteBtn: document.querySelector("#sendInviteBtn"),
       clearInviteBtn: document.querySelector("#clearInviteBtn"),
       inviteList: document.querySelector("#inviteList"),
       mobileTabs: document.querySelectorAll(".mobile-tabs button"),
@@ -2198,6 +2208,7 @@
     let cloudRefreshInProgress = false;
     let lastCloudRefreshAt = 0;
     let pendingConflict = null;
+    let backendInviteRecords = null;
     const pendingMediaUploads = [];
     const entryCloudBaselines = new Map();
     const objectUrls = new Set();
@@ -3617,16 +3628,51 @@
       localStorage.setItem(inviteStorageKey(), JSON.stringify(records));
     }
 
+    function normalizeInviteStatus(status) {
+      if (["待发送", "已发送", "已创建", "暂停"].includes(status)) return status;
+      if (status === "待创建") return "待发送";
+      return "待发送";
+    }
+
+    function inviteRecordFromBackend(row) {
+      return {
+        id: row.id,
+        email: row.email,
+        name: row.name || "",
+        note: row.note || "",
+        status: normalizeInviteStatus(row.status),
+        createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+        updatedAt: row.updated_at || row.updatedAt || new Date().toISOString(),
+        remote: true
+      };
+    }
+
+    function displayedInviteRecords() {
+      const byEmail = new Map();
+      inviteRecords().forEach(record => {
+        byEmail.set(record.email.toLowerCase(), {
+          ...record,
+          status: normalizeInviteStatus(record.status)
+        });
+      });
+      if (backendInviteRecords) {
+        backendInviteRecords.forEach(record => {
+          byEmail.set(record.email.toLowerCase(), record);
+        });
+      }
+      return [...byEmail.values()];
+    }
+
     function clearInviteForm() {
       els.inviteNameInput.value = "";
       els.inviteEmailInput.value = "";
-      els.inviteStatusInput.value = "待创建";
+      els.inviteStatusInput.value = "待发送";
       els.inviteNoteInput.value = "";
       els.inviteMessage.textContent = "";
     }
 
     function renderInvites() {
-      const records = inviteRecords().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      const records = displayedInviteRecords().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
       if (!records.length) {
         els.inviteList.innerHTML = `<div class="empty-state">还没有邀请记录</div>`;
         return;
@@ -3640,68 +3686,186 @@
           </div>
           <div class="dialog-item-actions">
             <button class="ghost-button" type="button" data-edit-invite="${record.id}">编辑</button>
-            <button class="ghost-button" type="button" data-toggle-invite="${record.id}">${record.status === "已创建" ? "设为待创建" : "标记已创建"}</button>
+            <button class="ghost-button" type="button" data-toggle-invite="${record.id}">${record.status === "已创建" ? "设为待发送" : "标记已创建"}</button>
             <button class="text-button danger" type="button" data-delete-invite="${record.id}">删除</button>
           </div>
         </div>
       `).join("");
     }
 
-    function saveInviteRecord() {
+    async function loadBackendInviteRecords({ silent = true } = {}) {
+      if (!CLOUD_ENABLED || !cloudClient || !cloudUser || !navigator.onLine) return;
+      if (!silent) els.inviteMessage.textContent = "正在读取后端邀请记录…";
+      const { data, error } = await cloudClient
+        .from("invitations")
+        .select("id,email,name,note,status,auth_user_id,invited_at,created_at,updated_at")
+        .order("updated_at", { ascending: false });
+      if (error) {
+        backendInviteRecords = null;
+        renderInvites();
+        if (!silent) {
+          els.inviteMessage.textContent = "后端邀请还没启用，或当前账号不是管理员。暂时显示本地记录。";
+        }
+        return;
+      }
+      backendInviteRecords = (data || []).map(inviteRecordFromBackend);
+      renderInvites();
+      if (!silent) {
+        els.inviteMessage.textContent = backendInviteRecords.length ? "已同步后端邀请记录。" : "";
+      }
+    }
+
+    function findInviteRecord(id) {
+      return displayedInviteRecords().find(item => item.id === id);
+    }
+
+    function upsertLocalInviteRecord(nextRecord) {
+      const records = inviteRecords();
+      const existing = records.find(record => record.email.toLowerCase() === nextRecord.email.toLowerCase());
+      const record = {
+        ...nextRecord,
+        id: existing?.id || nextRecord.id || crypto.randomUUID(),
+        createdAt: existing?.createdAt || nextRecord.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        remote: undefined
+      };
+      const nextRecords = existing
+        ? records.map(item => item.id === existing.id ? record : item)
+        : [record, ...records];
+      saveInviteRecords(nextRecords);
+      return { record, existing: Boolean(existing) };
+    }
+
+    function readInviteDraft() {
       const email = els.inviteEmailInput.value.trim().toLowerCase();
       const name = els.inviteNameInput.value.trim();
       const note = els.inviteNoteInput.value.trim();
-      const status = els.inviteStatusInput.value;
+      const status = normalizeInviteStatus(els.inviteStatusInput.value);
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         els.inviteMessage.textContent = "请输入有效邮箱。";
-        return;
+        return null;
       }
-      const records = inviteRecords();
-      const existing = records.find(record => record.email.toLowerCase() === email);
-      const nextRecord = {
-        id: existing?.id || crypto.randomUUID(),
-        email,
-        name,
-        note,
-        status,
-        createdAt: existing?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      const nextRecords = existing
-        ? records.map(record => record.id === existing.id ? nextRecord : record)
-        : [nextRecord, ...records];
-      saveInviteRecords(nextRecords);
+      return { email, name, note, status };
+    }
+
+    function saveInviteRecord() {
+      const draft = readInviteDraft();
+      if (!draft) return null;
+      const { existing } = upsertLocalInviteRecord(draft);
       clearInviteForm();
       els.inviteMessage.textContent = existing ? "邀请记录已更新。" : "邀请记录已保存。";
       renderInvites();
+      return draft;
+    }
+
+    async function sendInviteRecord() {
+      const draft = readInviteDraft();
+      if (!draft) return;
+      if (!CLOUD_ENABLED || !cloudClient || !cloudUser) {
+        els.inviteMessage.textContent = "请先用云端账号登录。";
+        return;
+      }
+      if (!navigator.onLine) {
+        els.inviteMessage.textContent = "当前离线，先保存为本地记录。";
+        upsertLocalInviteRecord(draft);
+        renderInvites();
+        return;
+      }
+      els.sendInviteBtn.disabled = true;
+      els.saveInviteBtn.disabled = true;
+      els.inviteMessage.textContent = "正在发送邀请邮件…";
+      try {
+        const redirectTo = `${location.origin}${location.pathname}`;
+        const { data, error } = await cloudClient.functions.invoke("invite-user", {
+          body: {
+            email: draft.email,
+            name: draft.name,
+            note: draft.note,
+            redirectTo
+          }
+        });
+        if (error) throw error;
+        if (!data?.ok) throw new Error(data?.error || "发送邀请失败。");
+        const remoteRecord = inviteRecordFromBackend(data.invitation);
+        upsertLocalInviteRecord({ ...remoteRecord, status: "已发送" });
+        if (backendInviteRecords) {
+          backendInviteRecords = [
+            remoteRecord,
+            ...backendInviteRecords.filter(record => record.email.toLowerCase() !== remoteRecord.email.toLowerCase())
+          ];
+        }
+        clearInviteForm();
+        renderInvites();
+        els.inviteMessage.textContent = "邀请邮件已发送。";
+      } catch (error) {
+        console.error(error);
+        upsertLocalInviteRecord(draft);
+        renderInvites();
+        els.inviteMessage.textContent = error.message?.includes("Failed to fetch")
+          ? "后端邀请函数还没部署，已先保存为本地记录。"
+          : `发送失败：${error.message || "请确认后端函数和管理员权限已启用。"}`;
+      } finally {
+        els.sendInviteBtn.disabled = false;
+        els.saveInviteBtn.disabled = false;
+      }
     }
 
     function editInviteRecord(id) {
-      const record = inviteRecords().find(item => item.id === id);
+      const record = findInviteRecord(id);
       if (!record) return;
       els.inviteNameInput.value = record.name || "";
       els.inviteEmailInput.value = record.email || "";
-      els.inviteStatusInput.value = record.status || "待创建";
+      els.inviteStatusInput.value = normalizeInviteStatus(record.status);
       els.inviteNoteInput.value = record.note || "";
       els.inviteMessage.textContent = "正在编辑这条邀请记录。";
       els.inviteNameInput.focus();
     }
 
-    function toggleInviteStatus(id) {
-      const records = inviteRecords().map(record => record.id === id
+    async function toggleInviteStatus(id) {
+      const current = findInviteRecord(id);
+      if (!current) return;
+      const nextStatus = current.status === "已创建" ? "待发送" : "已创建";
+      const records = inviteRecords().map(record => record.id === id || record.email.toLowerCase() === current.email.toLowerCase()
         ? {
             ...record,
-            status: record.status === "已创建" ? "待创建" : "已创建",
+            status: nextStatus,
             updatedAt: new Date().toISOString()
           }
         : record);
       saveInviteRecords(records);
+      if (current.remote && CLOUD_ENABLED && cloudClient) {
+        const { error } = await cloudClient
+          .from("invitations")
+          .update({ status: nextStatus })
+          .eq("id", current.id);
+        if (error) {
+          els.inviteMessage.textContent = "本地状态已更新，后端状态暂时没有同步。";
+          renderInvites();
+          return;
+        }
+        backendInviteRecords = (backendInviteRecords || []).map(record => record.id === current.id
+          ? { ...record, status: nextStatus, updatedAt: new Date().toISOString() }
+          : record);
+      }
       renderInvites();
       els.inviteMessage.textContent = "邀请状态已更新。";
     }
 
-    function deleteInviteRecord(id) {
-      saveInviteRecords(inviteRecords().filter(record => record.id !== id));
+    async function deleteInviteRecord(id) {
+      const current = findInviteRecord(id);
+      saveInviteRecords(inviteRecords().filter(record => record.id !== id && record.email.toLowerCase() !== current?.email.toLowerCase()));
+      if (current?.remote && CLOUD_ENABLED && cloudClient) {
+        const { error } = await cloudClient
+          .from("invitations")
+          .delete()
+          .eq("id", current.id);
+        if (error) {
+          els.inviteMessage.textContent = "本地记录已删除，后端记录暂时没有删除。";
+          renderInvites();
+          return;
+        }
+        backendInviteRecords = (backendInviteRecords || []).filter(record => record.id !== current.id);
+      }
       renderInvites();
       els.inviteMessage.textContent = "邀请记录已删除。";
     }
@@ -4371,6 +4535,10 @@
         clearInviteForm();
         renderInvites();
         els.accountDialog.showModal();
+        loadBackendInviteRecords({ silent: false }).catch(error => {
+          console.error(error);
+          els.inviteMessage.textContent = "暂时无法读取后端邀请记录。";
+        });
       });
       els.historyBtn.addEventListener("click", () => {
         openHistory().catch(error => {
@@ -4422,14 +4590,30 @@
         });
       });
       els.saveInviteBtn.addEventListener("click", saveInviteRecord);
+      els.sendInviteBtn.addEventListener("click", () => {
+        sendInviteRecord().catch(error => {
+          console.error(error);
+          els.inviteMessage.textContent = "发送邀请失败，请稍后重试。";
+        });
+      });
       els.clearInviteBtn.addEventListener("click", clearInviteForm);
       els.inviteList.addEventListener("click", event => {
         const editButton = event.target.closest("[data-edit-invite]");
         const toggleButton = event.target.closest("[data-toggle-invite]");
         const deleteButton = event.target.closest("[data-delete-invite]");
         if (editButton) editInviteRecord(editButton.dataset.editInvite);
-        if (toggleButton) toggleInviteStatus(toggleButton.dataset.toggleInvite);
-        if (deleteButton) deleteInviteRecord(deleteButton.dataset.deleteInvite);
+        if (toggleButton) {
+          toggleInviteStatus(toggleButton.dataset.toggleInvite).catch(error => {
+            console.error(error);
+            els.inviteMessage.textContent = "更新邀请状态失败。";
+          });
+        }
+        if (deleteButton) {
+          deleteInviteRecord(deleteButton.dataset.deleteInvite).catch(error => {
+            console.error(error);
+            els.inviteMessage.textContent = "删除邀请记录失败。";
+          });
+        }
       });
       els.migrateBtn.addEventListener("click", () => {
         migrateLocalEntries().catch(error => {

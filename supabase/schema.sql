@@ -164,6 +164,118 @@ revoke all on table public.media from anon;
 grant select, insert, delete on table public.media to authenticated;
 grant all on table public.media to service_role;
 
+create table if not exists public.app_admins (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.app_admins enable row level security;
+
+drop policy if exists "Admins can read themselves" on public.app_admins;
+create policy "Admins can read themselves"
+  on public.app_admins for select to authenticated
+  using ((select auth.uid()) = user_id);
+
+revoke all on table public.app_admins from anon;
+revoke insert, update, delete on table public.app_admins from authenticated;
+grant select on table public.app_admins to authenticated;
+grant all on table public.app_admins to service_role;
+
+create table if not exists public.invitations (
+  id uuid primary key default gen_random_uuid(),
+  inviter_id uuid not null references auth.users(id) on delete cascade,
+  email text not null,
+  name text not null default '',
+  note text not null default '',
+  status text not null default '待发送',
+  auth_user_id uuid references auth.users(id) on delete set null,
+  invited_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (inviter_id, email)
+);
+
+create index if not exists invitations_inviter_updated_idx
+  on public.invitations (inviter_id, updated_at desc);
+create index if not exists invitations_status_idx
+  on public.invitations (status);
+
+alter table public.invitations enable row level security;
+
+drop policy if exists "Admins can read their invitations" on public.invitations;
+create policy "Admins can read their invitations"
+  on public.invitations for select to authenticated
+  using (
+    (select auth.uid()) = inviter_id
+    and exists (
+      select 1 from public.app_admins
+      where app_admins.user_id = (select auth.uid())
+    )
+  );
+
+drop policy if exists "Admins can create their invitations" on public.invitations;
+create policy "Admins can create their invitations"
+  on public.invitations for insert to authenticated
+  with check (
+    (select auth.uid()) = inviter_id
+    and exists (
+      select 1 from public.app_admins
+      where app_admins.user_id = (select auth.uid())
+    )
+  );
+
+drop policy if exists "Admins can update their invitations" on public.invitations;
+create policy "Admins can update their invitations"
+  on public.invitations for update to authenticated
+  using (
+    (select auth.uid()) = inviter_id
+    and exists (
+      select 1 from public.app_admins
+      where app_admins.user_id = (select auth.uid())
+    )
+  )
+  with check (
+    (select auth.uid()) = inviter_id
+    and exists (
+      select 1 from public.app_admins
+      where app_admins.user_id = (select auth.uid())
+    )
+  );
+
+drop policy if exists "Admins can delete their invitations" on public.invitations;
+create policy "Admins can delete their invitations"
+  on public.invitations for delete to authenticated
+  using (
+    (select auth.uid()) = inviter_id
+    and exists (
+      select 1 from public.app_admins
+      where app_admins.user_id = (select auth.uid())
+    )
+  );
+
+create or replace function public.touch_invitation_updated_at()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+revoke all on function public.touch_invitation_updated_at() from public;
+
+drop trigger if exists touch_invitation_updated_at_before_update on public.invitations;
+create trigger touch_invitation_updated_at_before_update
+  before update on public.invitations
+  for each row execute function public.touch_invitation_updated_at();
+
+revoke all on table public.invitations from anon;
+grant select, insert, update, delete on table public.invitations to authenticated;
+grant all on table public.invitations to service_role;
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'diary-media',
