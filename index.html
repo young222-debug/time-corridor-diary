@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="时间长廊">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-n2plzYpzp/K2sACUi0EthtC4jIdglpwM1quW+bj/dUU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hGWPXNKdFuW77QRMOHvib76PtK32r++qBZQ/CgKlei0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" href="./assets/favicon.png">
@@ -311,6 +311,36 @@
       -webkit-line-clamp: 2;
     }
 
+    .load-more-button {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 12px;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 246, 0.58);
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.35;
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    }
+
+    .load-more-button:hover {
+      border-color: rgba(104, 120, 102, 0.5);
+      background: rgba(255, 250, 240, 0.84);
+      transform: translateY(-1px);
+    }
+
+    .load-more-button small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .entry-list .load-more-button {
+      margin: 12px 0 4px;
+    }
+
     .row-meta {
       display: flex;
       align-items: center;
@@ -481,6 +511,18 @@
       border-color: rgba(104, 120, 102, 0.5);
       box-shadow: var(--shadow);
       transform: translateY(-2px);
+    }
+
+    .timeline-more {
+      position: relative;
+      display: grid;
+      grid-template-columns: 112px 28px minmax(0, 1fr);
+      gap: 8px;
+      margin: 4px 0 20px;
+    }
+
+    .timeline-more .load-more-button {
+      grid-column: 3;
     }
 
     .media-strip {
@@ -1406,7 +1448,8 @@
         left: 88px;
       }
 
-      .timeline-card {
+      .timeline-card,
+      .timeline-more {
         grid-template-columns: 70px 24px minmax(0, 1fr);
       }
 
@@ -1467,6 +1510,14 @@
       .timeline-card {
         grid-template-columns: 1fr;
         gap: 10px;
+      }
+
+      .timeline-more {
+        display: block;
+      }
+
+      .timeline-more .load-more-button {
+        grid-column: auto;
       }
 
       .timeline::before,
@@ -1918,6 +1969,7 @@
       CLOUD_CONFIG.supabasePublishableKey
     );
     const TYPES = ["全部", "随笔", "照片", "Vlog", "想法"];
+    const ENTRY_BATCH_SIZE = 18;
     const typeClass = { "照片": "photo", "Vlog": "vlog", "想法": "thought", "随笔": "essay" };
     const els = {
       loginScreen: document.querySelector("#loginScreen"),
@@ -2016,6 +2068,7 @@
     let recycledEntries = [];
     let currentId = null;
     let activeType = "全部";
+    let visibleEntryLimit = ENTRY_BATCH_SIZE;
     let saveTimer = null;
     let searchTimer = null;
     let pendingSaveEntry = null;
@@ -2620,6 +2673,7 @@
     }
 
     function adoptLoadedEntries(list) {
+      resetVisibleEntries();
       entryCloudBaselines.clear();
       if (CLOUD_ENABLED) {
         list.forEach(entry => entryCloudBaselines.set(entry.id, entry.updatedAt || null));
@@ -2635,6 +2689,30 @@
         const haystack = [entry.title, entry.body, entry.mood, ...(entry.tags || [])].join(" ").toLowerCase();
         return typeMatch && (!keyword || haystack.includes(keyword));
       });
+    }
+
+    function visibleEntriesFor(list) {
+      return list.slice(0, visibleEntryLimit);
+    }
+
+    function resetVisibleEntries() {
+      visibleEntryLimit = ENTRY_BATCH_SIZE;
+    }
+
+    function loadMoreMarkup(total, scope) {
+      const shown = Math.min(visibleEntryLimit, total);
+      if (shown >= total) return "";
+      const remaining = total - shown;
+      const nextCount = Math.min(ENTRY_BATCH_SIZE, remaining);
+      return `<button class="load-more-button" type="button" data-load-more="${scope}">
+        再显示 ${nextCount} 条
+        <small>已显示 ${shown} / ${total}</small>
+      </button>`;
+    }
+
+    function showMoreEntries() {
+      visibleEntryLimit += ENTRY_BATCH_SIZE;
+      renderFilteredViews();
     }
 
     function getCurrentEntry() {
@@ -2804,13 +2882,14 @@
     }
 
     function renderList() {
-      const list = filteredEntries();
-      if (!list.length) {
+      const allEntries = filteredEntries();
+      if (!allEntries.length) {
         els.entryList.innerHTML = `<div class="empty-state">没有找到记录</div>`;
         return;
       }
+      const list = visibleEntriesFor(allEntries);
       let currentMonth = "";
-      els.entryList.innerHTML = list.map(entry => {
+      const rows = list.map(entry => {
         const month = formatMonth(entry.createdAt);
         const parts = dayParts(entry.createdAt);
         const monthHtml = month !== currentMonth ? `<div class="month-title">${month}</div>` : "";
@@ -2828,16 +2907,18 @@
             </span>
           </button>`;
       }).join("");
+      els.entryList.innerHTML = rows + loadMoreMarkup(allEntries.length, "list");
     }
 
     function renderTimeline() {
       videoCoverObserver?.disconnect();
-      const list = filteredEntries();
-      if (!list.length) {
+      const allEntries = filteredEntries();
+      if (!allEntries.length) {
         els.timeline.innerHTML = `<div class="empty-state">这里暂时没有符合条件的记录</div>`;
         return;
       }
-      els.timeline.innerHTML = list.map((entry, index) => {
+      const list = visibleEntriesFor(allEntries);
+      const cards = list.map((entry, index) => {
         const media = entry.media || [];
         const mediaHtml = media.length
           ? `<div class="media-strip">${media.slice(0, 3).map((item, mediaIndex) => {
@@ -2871,6 +2952,10 @@
           </div>
         </article>`;
       }).join("");
+      const moreButton = loadMoreMarkup(allEntries.length, "timeline");
+      els.timeline.innerHTML = moreButton
+        ? `${cards}<div class="timeline-more">${moreButton}</div>`
+        : cards;
       scheduleVideoCoverHydration();
     }
 
@@ -4081,16 +4166,24 @@
       });
       els.searchInput.addEventListener("input", () => {
         clearTimeout(searchTimer);
-        searchTimer = setTimeout(renderFilteredViews, 160);
+        searchTimer = setTimeout(() => {
+          resetVisibleEntries();
+          renderFilteredViews();
+        }, 160);
       });
       els.filterChips.addEventListener("click", event => {
         const button = event.target.closest("[data-type]");
         if (!button) return;
         activeType = button.dataset.type;
+        resetVisibleEntries();
         renderFilteredViews();
         renderChips();
       });
       els.entryList.addEventListener("click", event => {
+        if (event.target.closest("[data-load-more]")) {
+          showMoreEntries();
+          return;
+        }
         const row = event.target.closest("[data-id]");
         if (!row) return;
         const entry = entries.find(item => item.id === row.dataset.id);
@@ -4098,6 +4191,10 @@
         showPanel("editor");
       });
       els.timeline.addEventListener("click", event => {
+        if (event.target.closest("[data-load-more]")) {
+          showMoreEntries();
+          return;
+        }
         const card = event.target.closest("[data-id]");
         if (!card) return;
         const mediaButton = event.target.closest("[data-open-media]");

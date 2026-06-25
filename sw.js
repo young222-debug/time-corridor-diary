@@ -1,4 +1,4 @@
-const CACHE_NAME = "time-corridor-shell-v7";
+const CACHE_NAME = "time-corridor-shell-v8";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
