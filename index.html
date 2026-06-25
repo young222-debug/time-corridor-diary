@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="时间长廊">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hGWPXNKdFuW77QRMOHvib76PtK32r++qBZQ/CgKlei0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-raJt5UJZ5nAWOWpUkILsnVRvNJWmM5nUBjRwE2+muk8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" href="./assets/favicon.png">
@@ -2089,6 +2089,8 @@
     let mediaHydrationScheduled = false;
     let mediaRetryTimer = null;
     let mediaRetryInProgress = false;
+    let cloudRefreshInProgress = false;
+    let lastCloudRefreshAt = 0;
     let pendingConflict = null;
     const pendingMediaUploads = [];
     const entryCloudBaselines = new Map();
@@ -2109,13 +2111,20 @@
       if (key && localStorage.getItem(key)) {
         setSaveState("网络已恢复，正在同步", "syncing");
         syncStoredDraft()
+          .then(() => refreshCloudEntries({ silent: true, force: true }))
           .then(() => setSettledState("已同步"))
           .catch(error => {
             console.error(error);
             setSaveState("同步失败，草稿仍在本机", "error");
           });
+        if (pendingMediaUploads.length) scheduleMediaRetry(300);
+        return;
       }
       if (pendingMediaUploads.length) scheduleMediaRetry(300);
+      refreshCloudEntries({ silent: true }).catch(error => {
+        console.error(error);
+        setSaveState("刷新云端失败，稍后再试", "error");
+      });
     }
 
     async function registerServiceWorker() {
@@ -2672,8 +2681,8 @@
       return [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
-    function adoptLoadedEntries(list) {
-      resetVisibleEntries();
+    function adoptLoadedEntries(list, { resetLimit = true } = {}) {
+      if (resetLimit) resetVisibleEntries();
       entryCloudBaselines.clear();
       if (CLOUD_ENABLED) {
         list.forEach(entry => entryCloudBaselines.set(entry.id, entry.updatedAt || null));
@@ -3177,6 +3186,50 @@
       const restored = { ...entries[index], ...draft, media: entries[index].media || [] };
       entries[index] = restored;
       await persistEntry(restored, { silent: true });
+    }
+
+    function storedDraftForCurrentEntry() {
+      const key = draftKey();
+      if (!key || !currentId) return null;
+      try {
+        const draft = JSON.parse(localStorage.getItem(key));
+        return draft?.id === currentId ? draft : null;
+      } catch {
+        localStorage.removeItem(key);
+        return null;
+      }
+    }
+
+    async function refreshCloudEntries({ silent = true, force = false } = {}) {
+      if (!CLOUD_ENABLED || !diaryReady || !navigator.onLine || lockInProgress) return;
+      if (cloudRefreshInProgress) return;
+      if (!force && Date.now() - lastCloudRefreshAt < 15000) return;
+      if (pendingConflict || pendingSaveEntry || storedDraftForCurrentEntry()) {
+        if (!silent) setSaveState("有本机草稿，稍后刷新", "local");
+        return;
+      }
+
+      const previousId = currentId;
+      cloudRefreshInProgress = true;
+      lastCloudRefreshAt = Date.now();
+      if (!silent) setSaveState("刷新云端中", "syncing");
+      try {
+        adoptLoadedEntries(await getAllEntries(), { resetLimit: false });
+        if (previousId && entries.some(entry => entry.id === previousId)) {
+          currentId = previousId;
+        } else {
+          currentId = entries[0]?.id || null;
+        }
+        const current = getCurrentEntry();
+        if (current) {
+          loadEditor(current);
+        } else {
+          renderAll();
+        }
+        if (!silent) setSettledState("已刷新");
+      } finally {
+        cloudRefreshInProgress = false;
+      }
     }
 
     async function persistEntry(entry, { silent = false, force = false } = {}) {
@@ -4394,6 +4447,12 @@
     window.addEventListener("beforeunload", () => clearObjectUrls());
     window.addEventListener("online", updateNetworkState);
     window.addEventListener("offline", updateNetworkState);
+    window.addEventListener("focus", () => {
+      refreshCloudEntries({ silent: true }).catch(error => {
+        console.error(error);
+        setSaveState("刷新云端失败，稍后再试", "error");
+      });
+    });
     ["pointerdown", "keydown", "input", "touchstart", "scroll"].forEach(type => {
       window.addEventListener(type, () => recordActivity(), { passive: true });
     });
@@ -4402,6 +4461,10 @@
         recordActivity(true);
       } else {
         checkAutoLock().catch(error => console.error(error));
+        refreshCloudEntries({ silent: true }).catch(error => {
+          console.error(error);
+          setSaveState("刷新云端失败，稍后再试", "error");
+        });
       }
     });
     window.addEventListener("storage", event => {
