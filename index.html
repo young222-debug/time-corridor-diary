@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="时间长廊">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-90KnV1tv7hOgN+IbpCxa5haIUrYBcEVKM/nmfOtcvj4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-IZ/19npe6LQ0iQMjEuT/55jNNVYxPYr3xNXuLkvkp14='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://awywqxdvkliehacvruhx.supabase.co; media-src 'self' blob: https://awywqxdvkliehacvruhx.supabase.co; connect-src 'self' https://awywqxdvkliehacvruhx.supabase.co https://awywqxdvkliehacvruhx.storage.supabase.co wss://awywqxdvkliehacvruhx.supabase.co; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'self' blob:">
   <title>时间长廊</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" href="./assets/favicon.png">
@@ -1008,6 +1008,59 @@
       font-size: 12px;
     }
 
+    .conflict-summary {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .conflict-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .conflict-version {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 252, 246, 0.72);
+    }
+
+    .conflict-version strong,
+    .conflict-version span,
+    .conflict-version p {
+      display: block;
+      margin: 0;
+    }
+
+    .conflict-version strong {
+      overflow: hidden;
+      font-size: 13px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .conflict-version span {
+      margin: 6px 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .conflict-version p {
+      display: -webkit-box;
+      min-height: 54px;
+      overflow: hidden;
+      color: var(--ink-soft);
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+    }
+
     .data-overview {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1336,7 +1389,8 @@
 
       .field-grid,
       .stats,
-      .data-overview {
+      .data-overview,
+      .conflict-grid {
         grid-template-columns: 1fr;
       }
 
@@ -1640,6 +1694,51 @@
     </div>
   </dialog>
 
+  <dialog id="conflictDialog" aria-labelledby="conflictTitle">
+    <div class="dialog-head">
+      <h2 id="conflictTitle">发现另一处修改</h2>
+      <button class="text-button" type="button" data-close-dialog="conflictDialog">稍后处理</button>
+    </div>
+    <div class="dialog-body">
+      <p class="conflict-summary">这篇日记在另一台设备上也更新过。为了不覆盖内容，我先暂停同步，并保留你正在编辑的本机版本。</p>
+      <div class="conflict-grid">
+        <div class="conflict-version">
+          <strong id="localConflictTitle">本机版本</strong>
+          <span id="localConflictTime"></span>
+          <p id="localConflictBody"></p>
+        </div>
+        <div class="conflict-version">
+          <strong id="remoteConflictTitle">云端版本</strong>
+          <span id="remoteConflictTime"></span>
+          <p id="remoteConflictBody"></p>
+        </div>
+      </div>
+      <div class="backup-options">
+        <div class="backup-option">
+          <div>
+            <h3>保留本机版本</h3>
+            <p>用你正在编辑的内容更新云端，云端旧内容会进入历史版本。</p>
+          </div>
+          <button class="primary-button" id="keepLocalBtn" type="button">保留本机</button>
+        </div>
+        <div class="backup-option">
+          <div>
+            <h3>使用云端版本</h3>
+            <p>打开云端内容，同时把本机内容存成一条“本机副本”。</p>
+          </div>
+          <button class="ghost-button" id="useRemoteBtn" type="button">使用云端</button>
+        </div>
+        <div class="backup-option">
+          <div>
+            <h3>合并内容</h3>
+            <p>把两边正文合在同一篇日记里，再保存到云端。</p>
+          </div>
+          <button class="ghost-button" id="mergeConflictBtn" type="button">合并</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="accountDialog" aria-labelledby="accountTitle">
     <div class="dialog-head">
       <h2 id="accountTitle">账号安全</h2>
@@ -1790,6 +1889,16 @@
       recycleList: document.querySelector("#recycleList"),
       historyDialog: document.querySelector("#historyDialog"),
       historyList: document.querySelector("#historyList"),
+      conflictDialog: document.querySelector("#conflictDialog"),
+      localConflictTitle: document.querySelector("#localConflictTitle"),
+      localConflictTime: document.querySelector("#localConflictTime"),
+      localConflictBody: document.querySelector("#localConflictBody"),
+      remoteConflictTitle: document.querySelector("#remoteConflictTitle"),
+      remoteConflictTime: document.querySelector("#remoteConflictTime"),
+      remoteConflictBody: document.querySelector("#remoteConflictBody"),
+      keepLocalBtn: document.querySelector("#keepLocalBtn"),
+      useRemoteBtn: document.querySelector("#useRemoteBtn"),
+      mergeConflictBtn: document.querySelector("#mergeConflictBtn"),
       accountDialog: document.querySelector("#accountDialog"),
       dataDialog: document.querySelector("#dataDialog"),
       mediaDialog: document.querySelector("#mediaDialog"),
@@ -1841,7 +1950,9 @@
     let mediaHydrationScheduled = false;
     let mediaRetryTimer = null;
     let mediaRetryInProgress = false;
+    let pendingConflict = null;
     const pendingMediaUploads = [];
+    const entryCloudBaselines = new Map();
     const objectUrls = new Set();
     const videoPosterCache = new Map();
 
@@ -2146,6 +2257,7 @@
       clearTimeout(saveTimer);
       clearTimeout(mediaRetryTimer);
       pendingSaveEntry = null;
+      pendingConflict = null;
       pendingMediaUploads.length = 0;
       mediaRetryInProgress = false;
       els.retryUploadBtn.hidden = true;
@@ -2161,6 +2273,7 @@
           diaryReady = false;
           entries = [];
           currentId = null;
+          entryCloudBaselines.clear();
         } else {
           sessionStorage.removeItem(SESSION_KEY);
           currentAccount = null;
@@ -2205,6 +2318,30 @@
         deletedAt: row.deleted_at,
         media: []
       };
+    }
+
+    function cloneEntry(entry) {
+      return entry ? {
+        ...entry,
+        tags: [...(entry.tags || [])],
+        media: [...(entry.media || [])]
+      } : null;
+    }
+
+    function timestampValue(value) {
+      const time = Date.parse(value || "");
+      return Number.isFinite(time) ? time : 0;
+    }
+
+    function sameSavedContent(left, right) {
+      if (!left || !right) return false;
+      return (left.title || "") === (right.title || "") &&
+        (left.body || "") === (right.body || "") &&
+        (left.type || "随笔") === (right.type || "随笔") &&
+        (left.mood || "平静") === (right.mood || "平静") &&
+        timestampValue(left.createdAt) === timestampValue(right.createdAt) &&
+        JSON.stringify(left.tags || []) === JSON.stringify(right.tags || []) &&
+        (left.deletedAt || null) === (right.deletedAt || null);
     }
 
     async function loadCloudMedia(entryList) {
@@ -2258,6 +2395,18 @@
       };
     }
 
+    async function fetchCloudEntry(entryId) {
+      if (!CLOUD_ENABLED || !entryId) return null;
+      const { data, error } = await cloudClient
+        .from("entries")
+        .select("*")
+        .eq("id", entryId)
+        .eq("user_id", cloudUser.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? cloudRowToEntry(data) : null;
+    }
+
     async function getAllEntries() {
       if (CLOUD_ENABLED) {
         const { data, error } = await cloudClient
@@ -2277,10 +2426,14 @@
 
     async function putEntry(entry) {
       if (CLOUD_ENABLED) {
-        const { error } = await cloudClient
+        const { data, error } = await cloudClient
           .from("entries")
-          .upsert(entryToCloudRow(entry), { onConflict: "id" });
+          .upsert(entryToCloudRow(entry), { onConflict: "id" })
+          .select("updated_at")
+          .single();
         if (error) throw error;
+        if (data?.updated_at) entry.updatedAt = data.updated_at;
+        entryCloudBaselines.set(entry.id, entry.updatedAt || null);
         return entry;
       }
       return new Promise((resolve, reject) => {
@@ -2381,6 +2534,10 @@
     }
 
     function adoptLoadedEntries(list) {
+      entryCloudBaselines.clear();
+      if (CLOUD_ENABLED) {
+        list.forEach(entry => entryCloudBaselines.set(entry.id, entry.updatedAt || null));
+      }
       recycledEntries = sortedEntries(list.filter(entry => entry.deletedAt));
       entries = sortedEntries(list.filter(entry => !entry.deletedAt));
     }
@@ -2662,6 +2819,9 @@
         persistEntry(pending, { silent: true }).catch(error => console.error(error));
       }
       currentId = entry.id;
+      if (CLOUD_ENABLED && !entryCloudBaselines.has(entry.id)) {
+        entryCloudBaselines.set(entry.id, entry.updatedAt || null);
+      }
       els.titleInput.value = entry.title || "";
       els.dateInput.value = formatDateForInput(entry.createdAt);
       els.typeInput.value = entry.type || "随笔";
@@ -2685,6 +2845,115 @@
         createdAt: new Date(els.dateInput.value || Date.now()).toISOString(),
         updatedAt: new Date().toISOString()
       };
+    }
+
+    function renderConflictDialog() {
+      if (!pendingConflict) return;
+      const { localEntry, remoteEntry } = pendingConflict;
+      els.localConflictTitle.textContent = localEntry.title || "本机版本";
+      els.localConflictTime.textContent = `本机编辑：${formatLong(localEntry.updatedAt || new Date().toISOString())}`;
+      els.localConflictBody.textContent = localEntry.body || "无正文";
+      els.remoteConflictTitle.textContent = remoteEntry.title || "云端版本";
+      els.remoteConflictTime.textContent = `云端更新：${formatLong(remoteEntry.updatedAt || new Date().toISOString())}`;
+      els.remoteConflictBody.textContent = remoteEntry.body || "无正文";
+      if (!els.conflictDialog.open) els.conflictDialog.showModal();
+    }
+
+    async function detectCloudConflict(entry, { force = false } = {}) {
+      if (!CLOUD_ENABLED || force || !navigator.onLine || !entry?.id) return null;
+      if (pendingConflict?.localEntry.id === entry.id) {
+        pendingConflict.localEntry = cloneEntry(entry);
+        renderConflictDialog();
+        return pendingConflict;
+      }
+      const baseline = entryCloudBaselines.get(entry.id);
+      if (!baseline) return null;
+      const remoteEntry = await fetchCloudEntry(entry.id);
+      if (!remoteEntry) return null;
+      const remoteUpdated = timestampValue(remoteEntry.updatedAt);
+      const baselineUpdated = timestampValue(baseline);
+      if (remoteUpdated <= baselineUpdated + 500) return null;
+      if (sameSavedContent(remoteEntry, entry)) {
+        entryCloudBaselines.set(entry.id, remoteEntry.updatedAt || null);
+        return null;
+      }
+      return {
+        localEntry: cloneEntry(entry),
+        remoteEntry,
+        baseUpdatedAt: baseline
+      };
+    }
+
+    async function saveConflictCopy(entry) {
+      const copy = createEntry({
+        ...entry,
+        title: `${entry.title || "未命名的一天"}（本机副本）`,
+        tags: Array.from(new Set([...(entry.tags || []), "本机副本"])),
+        media: [],
+        deletedAt: null
+      });
+      copy.createdAt = entry.createdAt || copy.createdAt;
+      copy.updatedAt = new Date().toISOString();
+      entries.unshift(copy);
+      await putEntry(copy);
+      return copy;
+    }
+
+    async function resolveConflict(action) {
+      if (!pendingConflict) return;
+      const conflict = pendingConflict;
+      pendingConflict = null;
+      if (els.conflictDialog.open) els.conflictDialog.close();
+
+      if (action === "local") {
+        const localEntry = {
+          ...conflict.localEntry,
+          updatedAt: new Date().toISOString()
+        };
+        await persistEntry(localEntry, { force: true });
+        if (localEntry.id === currentId) loadEditor(localEntry);
+        setSaveState("已保留本机版本");
+        return;
+      }
+
+      if (action === "remote") {
+        await saveConflictCopy(conflict.localEntry);
+        const remoteEntry = {
+          ...conflict.remoteEntry,
+          media: (entries.find(entry => entry.id === conflict.remoteEntry.id)?.media || [])
+        };
+        entries = entries.map(entry => entry.id === remoteEntry.id ? remoteEntry : entry);
+        entryCloudBaselines.set(remoteEntry.id, remoteEntry.updatedAt || null);
+        const key = draftKey();
+        if (key) localStorage.removeItem(key);
+        loadEditor(remoteEntry);
+        renderAll();
+        setSaveState("已使用云端版本，并保存本机副本");
+        return;
+      }
+
+      if (action === "merge") {
+        const merged = {
+          ...conflict.remoteEntry,
+          title: conflict.localEntry.title || conflict.remoteEntry.title,
+          body: [
+            "【本机版本】",
+            conflict.localEntry.body || "无正文",
+            "",
+            "【云端版本】",
+            conflict.remoteEntry.body || "无正文"
+          ].join("\n"),
+          type: conflict.localEntry.type || conflict.remoteEntry.type,
+          mood: conflict.localEntry.mood || conflict.remoteEntry.mood,
+          tags: Array.from(new Set([...(conflict.remoteEntry.tags || []), ...(conflict.localEntry.tags || []), "已合并"])),
+          createdAt: conflict.localEntry.createdAt || conflict.remoteEntry.createdAt,
+          updatedAt: new Date().toISOString(),
+          media: entries.find(entry => entry.id === conflict.remoteEntry.id)?.media || []
+        };
+        await persistEntry(merged, { force: true });
+        loadEditor(merged);
+        setSaveState("已合并并同步");
+      }
     }
 
     function storeDraftEntry(entry) {
@@ -2736,11 +3005,10 @@
       }
       const restored = { ...entries[index], ...draft, media: entries[index].media || [] };
       entries[index] = restored;
-      await putEntry(restored);
-      localStorage.removeItem(key);
+      await persistEntry(restored, { silent: true });
     }
 
-    async function persistEntry(entry, { silent = false } = {}) {
+    async function persistEntry(entry, { silent = false, force = false } = {}) {
       if (!entry) return;
       if (entry.id === currentId && navigator.onLine) {
         setSaveState(silent ? "正在同步" : "保存中", "syncing");
@@ -2753,6 +3021,14 @@
         return;
       }
       try {
+        const conflict = await detectCloudConflict(entry, { force });
+        if (conflict) {
+          pendingConflict = conflict;
+          storeDraftEntry(entry);
+          if (entry.id === currentId) setSaveState("发现另一处修改，等待选择", "error");
+          renderConflictDialog();
+          return;
+        }
         await putEntry(entry);
       } catch (error) {
         if (CLOUD_ENABLED && isConnectionError(error)) {
@@ -3644,6 +3920,24 @@
       els.historyList.addEventListener("click", event => {
         const button = event.target.closest("[data-restore-version]");
         if (button) restoreVersion(button.dataset.restoreVersion).catch(console.error);
+      });
+      els.keepLocalBtn.addEventListener("click", () => {
+        resolveConflict("local").catch(error => {
+          console.error(error);
+          setSaveState("冲突处理失败，请稍后重试", "error");
+        });
+      });
+      els.useRemoteBtn.addEventListener("click", () => {
+        resolveConflict("remote").catch(error => {
+          console.error(error);
+          setSaveState("冲突处理失败，请稍后重试", "error");
+        });
+      });
+      els.mergeConflictBtn.addEventListener("click", () => {
+        resolveConflict("merge").catch(error => {
+          console.error(error);
+          setSaveState("冲突处理失败，请稍后重试", "error");
+        });
       });
       els.passwordForm.addEventListener("submit", event => {
         updatePassword(event).catch(error => {
